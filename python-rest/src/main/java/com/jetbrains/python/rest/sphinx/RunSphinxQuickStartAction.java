@@ -26,23 +26,24 @@ import consulo.module.Module;
 import consulo.module.ModuleManager;
 import consulo.project.Project;
 import consulo.ui.annotation.RequiredUIAccess;
-import consulo.ui.ex.action.AnAction;
-import consulo.ui.ex.action.AnActionEvent;
-import consulo.ui.ex.action.Presentation;
+import consulo.ui.ex.action.*;
+import consulo.ui.ex.action.coroutine.ActionSafeReadLock;
+import consulo.util.concurrent.coroutine.Coroutine;
 
 /**
  * @author catherine
  */
 @ActionImpl(id = "RunSphinxQuickStartAction", parents = @ActionParentRef(@ActionRef(id = "ToolsMenu")))
-public class RunSphinxQuickStartAction extends AnAction implements DumbAware {
+public class RunSphinxQuickStartAction extends AnAction implements DumbAware, AnActionWithAsyncUpdate {
     public RunSphinxQuickStartAction() {
         super(LocalizeValue.localizeTODO("Sphinx quickstart"), LocalizeValue.localizeTODO("Allows to run sphinx quick-start action"));
     }
 
     @Override
-    public void update(AnActionEvent event) {
-        super.update(event);
-        RestPythonUtil.updateSphinxQuickStartRequiredAction(event);
+    public Coroutine<?, ?> updateAsync(AnActionEvent e) {
+        return ActionSafeReadLock.run(e, presentation -> {
+            RestPythonUtil.updateSphinxQuickStartRequiredAction(e);
+        }).toCoroutine();
     }
 
     @Override

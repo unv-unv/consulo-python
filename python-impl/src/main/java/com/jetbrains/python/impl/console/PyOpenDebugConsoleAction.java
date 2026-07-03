@@ -26,6 +26,7 @@ import consulo.project.Project;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.action.AnAction;
 import consulo.ui.ex.action.AnActionEvent;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 
 import java.util.Collection;
 import java.util.function.Consumer;
@@ -33,7 +34,7 @@ import java.util.function.Consumer;
 /**
  * @author traff
  */
-public class PyOpenDebugConsoleAction extends AnAction implements DumbAware {
+public class PyOpenDebugConsoleAction extends AnAction implements DumbAware, AnActionWithSyncUpdate {
     public PyOpenDebugConsoleAction() {
         super();
         getTemplatePresentation().setIcon(ExecutionIconGroup.console());

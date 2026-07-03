@@ -22,6 +22,7 @@ import consulo.module.Module;
 import consulo.application.dumb.DumbAware;
 import consulo.project.Project;
 import consulo.content.bundle.Sdk;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 import consulo.util.lang.Pair;
 import consulo.ui.annotation.RequiredUIAccess;
 
@@ -29,14 +30,13 @@ import consulo.ui.annotation.RequiredUIAccess;
 /**
  * @author oleg
  */
-public class RunPythonConsoleAction extends AnAction implements DumbAware {
+public class RunPythonConsoleAction extends AnAction implements DumbAware, AnActionWithSyncUpdate {
     public RunPythonConsoleAction() {
         super();
         getTemplatePresentation().setIcon(PythonImplIconGroup.pythonPythonconsole());
     }
 
     @Override
-    @RequiredUIAccess
     public void update(AnActionEvent e) {
         e.getPresentation().setVisible(true);
         e.getPresentation().setEnabled(false);

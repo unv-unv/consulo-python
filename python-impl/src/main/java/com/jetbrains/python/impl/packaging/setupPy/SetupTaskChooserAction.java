@@ -31,6 +31,7 @@ import consulo.project.Project;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.action.AnAction;
 import consulo.ui.ex.action.AnActionEvent;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 import consulo.ui.ex.awt.Messages;
 import consulo.virtualFileSystem.LocalFileSystem;
 import consulo.virtualFileSystem.VirtualFile;
@@ -41,7 +42,7 @@ import java.util.List;
 /**
  * @author yole
  */
-public class SetupTaskChooserAction extends AnAction {
+public class SetupTaskChooserAction extends AnAction implements AnActionWithSyncUpdate {
     public SetupTaskChooserAction() {
         super(LocalizeValue.localizeTODO("Run setup.py Task..."));
     }

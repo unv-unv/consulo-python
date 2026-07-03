@@ -34,6 +34,7 @@ import consulo.project.Project;
 import consulo.python.module.extension.PyModuleExtension;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.action.AnActionEvent;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 import consulo.ui.ex.action.DumbAwareAction;
 import consulo.ui.ex.awt.Messages;
 import consulo.ui.ex.awt.UIUtil;
@@ -43,7 +44,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * @author yole
  */
-public class CreatePackageAction extends DumbAwareAction {
+public class CreatePackageAction extends DumbAwareAction implements AnActionWithSyncUpdate {
     private static final Logger LOG = Logger.getInstance(CreatePackageAction.class);
 
     @Override

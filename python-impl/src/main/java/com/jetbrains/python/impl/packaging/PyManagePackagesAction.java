@@ -21,11 +21,12 @@ import consulo.ui.ex.action.AnActionEvent;
 import consulo.module.Module;
 import consulo.content.bundle.Sdk;
 import com.jetbrains.python.impl.sdk.PythonSdkType;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 
 /**
  * @author yole
  */
-public class PyManagePackagesAction extends AnAction {
+public class PyManagePackagesAction extends AnAction implements AnActionWithSyncUpdate {
     @Override
     @RequiredUIAccess
     public void actionPerformed(AnActionEvent e) {

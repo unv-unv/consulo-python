@@ -25,6 +25,7 @@ import consulo.project.Project;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.action.AnAction;
 import consulo.ui.ex.action.AnActionEvent;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 import consulo.util.io.FileUtil;
 import org.jspecify.annotations.Nullable;
 
@@ -35,7 +36,7 @@ import java.util.List;
 /**
  * @author yole
  */
-public class CleanPycAction extends AnAction {
+public class CleanPycAction extends AnAction implements AnActionWithSyncUpdate {
     private static void collectPycFiles(File directory, List<File> pycFiles) {
         FileUtil.processFilesRecursively(
             directory,

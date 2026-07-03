@@ -97,8 +97,8 @@ import consulo.util.lang.EmptyRunnable;
 import consulo.util.lang.StringUtil;
 import consulo.util.lang.TimeoutUtil;
 import consulo.virtualFileSystem.VirtualFile;
-import org.jspecify.annotations.Nullable;
 import org.apache.xmlrpc.XmlRpcException;
+import org.jspecify.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
@@ -523,7 +523,7 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
     }
 
     private AnAction createInterruptAction() {
-        AnAction anAction = new AnAction() {
+        AnAction anAction = new LegacyAnAction() {
             @Override
             @RequiredUIAccess
             public void actionPerformed(AnActionEvent e) {
@@ -542,7 +542,6 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
             }
 
             @Override
-            @RequiredUIAccess
             public void update(AnActionEvent e) {
                 EditorEx consoleEditor = myConsoleView.getConsoleEditor();
                 boolean enabled =
@@ -556,7 +555,7 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
     }
 
     private AnAction createTabCompletionAction() {
-        AnAction runCompletions = new AnAction() {
+        AnAction runCompletions = new LegacyAnAction() {
             @RequiredUIAccess
             @Override
             public void actionPerformed(AnActionEvent e) {
@@ -574,7 +573,6 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
                 ActionImplUtil.performActionDumbAware(completionAction, e);
             }
 
-            @RequiredUIAccess
             @Override
             public void update(AnActionEvent e) {
                 Editor editor = myConsoleView.getConsoleEditor();
@@ -633,12 +631,7 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
 
     private AnAction createStopAction() {
         AnAction generalStopAction = ActionManager.getInstance().getAction(IdeActions.ACTION_STOP_PROGRAM);
-        AnAction stopAction = new DumbAwareAction() {
-            @Override
-            public void update(AnActionEvent e) {
-                generalStopAction.update(e);
-            }
-
+        PyDelegateConsoleAction stopAction = new PyDelegateConsoleAction(generalStopAction) {
             @Override
             @RequiredUIAccess
             public void actionPerformed(AnActionEvent e) {
@@ -654,12 +647,7 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
     private AnAction createCloseAction(final RunContentDescriptor descriptor) {
         final AnAction generalCloseAction = new CloseAction(getExecutor(), descriptor, myProject);
 
-        AnAction stopAction = new DumbAwareAction() {
-            @Override
-            public void update(AnActionEvent e) {
-                generalCloseAction.update(e);
-            }
-
+        PyDelegateConsoleAction stopAction = new PyDelegateConsoleAction(generalCloseAction) {
             @Override
             @RequiredUIAccess
             public void actionPerformed(AnActionEvent e) {
@@ -875,11 +863,6 @@ public class PydevConsoleRunnerImpl implements PydevConsoleRunner {
                 LocalizeValue.localizeTODO("Creates new python console"),
                 PlatformIconGroup.generalAdd()
             );
-        }
-
-        @Override
-        public void update(AnActionEvent e) {
-            e.getPresentation().setEnabled(true);
         }
 
         @Override

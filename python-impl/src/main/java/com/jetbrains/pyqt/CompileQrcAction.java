@@ -27,6 +27,7 @@ import consulo.project.Project;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.action.AnAction;
 import consulo.ui.ex.action.AnActionEvent;
+import consulo.ui.ex.action.AnActionWithSyncUpdate;
 import consulo.ui.ex.awt.DialogWrapper;
 import consulo.ui.ex.awt.Messages;
 import consulo.ui.ex.awt.TextFieldWithBrowseButton;
@@ -38,7 +39,7 @@ import javax.swing.*;
 /**
  * @author yole
  */
-public class CompileQrcAction extends AnAction {
+public class CompileQrcAction extends AnAction implements AnActionWithSyncUpdate {
     @Override
     @RequiredUIAccess
     public void actionPerformed(AnActionEvent e) {
