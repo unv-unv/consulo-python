@@ -36,6 +36,9 @@ import consulo.module.content.ProjectFileIndex;
 import consulo.platform.Platform;
 import consulo.project.Project;
 import consulo.ui.ex.action.AnActionEvent;
+import consulo.ui.ex.action.AnActionWithAsyncUpdate;
+import consulo.ui.ex.action.coroutine.ActionSafeReadLock;
+import consulo.util.concurrent.coroutine.Coroutine;
 import consulo.util.lang.Comparing;
 import consulo.util.lang.StringUtil;
 import consulo.virtualFileSystem.VirtualFile;
@@ -47,7 +50,7 @@ import java.util.Properties;
 /**
  * @author yole
  */
-public class CreateSetupPyAction extends CreateFromTemplateAction {
+public class CreateSetupPyAction extends CreateFromTemplateAction implements AnActionWithAsyncUpdate {
     private static final String AUTHOR_PROPERTY = "python.packaging.author";
     private static final String EMAIL_PROPERTY = "python.packaging.author.email";
 
@@ -63,9 +66,11 @@ public class CreateSetupPyAction extends CreateFromTemplateAction {
     }
 
     @Override
-    public void update(AnActionEvent e) {
-        Module module = e.getData(Module.KEY);
-        e.getPresentation().setEnabled(module != null && PyPackageUtil.findSetupPy(module) == null);
+    public Coroutine<?, ?> updateAsync(AnActionEvent e) {
+        return ActionSafeReadLock.run(e, presentation -> {
+            Module module = e.getData(Module.KEY);
+            e.getPresentation().setEnabled(module != null && PyPackageUtil.findSetupPy(module) == null);
+        }).toCoroutine();
     }
 
     @Override

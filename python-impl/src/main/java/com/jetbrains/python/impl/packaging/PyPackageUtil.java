@@ -26,6 +26,7 @@ import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.resolve.QualifiedResolveResult;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.application.Application;
 import consulo.content.bundle.Sdk;
 import consulo.document.Document;
@@ -84,6 +85,7 @@ public class PyPackageUtil {
     }
 
     @Nullable
+    @RequiredReadAction
     public static PyFile findSetupPy(Module module) {
         for (VirtualFile root : PyUtil.getSourceRoots(module)) {
             VirtualFile child = root.findChild("setup.py");
