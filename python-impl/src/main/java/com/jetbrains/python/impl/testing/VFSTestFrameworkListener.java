@@ -70,7 +70,7 @@ public class VFSTestFrameworkListener implements BulkFileListener {
   @Inject
   public VFSTestFrameworkListener(Application application) {
     MessageBus messageBus = application.getMessageBus();
-    messageBus.connect().subscribe(BulkFileListener.class, new BulkFileListener.Adapter() {
+    messageBus.connect().subscribe(BulkFileListener.class, new BulkFileListener() {
       @Override
       public void after(List<? extends VFileEvent> events) {
         for (VFileEvent event : events) {

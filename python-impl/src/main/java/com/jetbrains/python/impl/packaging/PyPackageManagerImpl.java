@@ -624,7 +624,7 @@ public class PyPackageManagerImpl extends PyPackageManager
 		return packages;
 	}
 
-	private class MySdkRootWatcher extends BulkFileListener.Adapter
+	private class MySdkRootWatcher implements BulkFileListener
 	{
 		@Override
 		public void after(List<? extends VFileEvent> events)
