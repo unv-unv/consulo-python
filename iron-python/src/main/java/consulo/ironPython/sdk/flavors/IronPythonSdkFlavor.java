@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package consulo.ironPython.sdk.flavors;
 
 import com.jetbrains.python.impl.PythonIcons;
@@ -36,7 +35,7 @@ public class IronPythonSdkFlavor extends PythonSdkFlavor
 	@Override
 	public Collection<String> suggestHomePaths()
 	{
-		Set<String> result = new TreeSet<String>();
+		Set<String> result = new TreeSet<>();
 		String root = System.getenv("ProgramFiles(x86)");
 		if(root == null)
 		{
@@ -72,7 +71,8 @@ public class IronPythonSdkFlavor extends PythonSdkFlavor
 		return name.equals("ipy.exe") || name.equals("ipy64.exe");
 	}
 
-	public String getVersionStringFromOutput(String version)
+	@Override
+    public String getVersionStringFromOutput(String version)
 	{
 		return getName() + " " + version;
 	}

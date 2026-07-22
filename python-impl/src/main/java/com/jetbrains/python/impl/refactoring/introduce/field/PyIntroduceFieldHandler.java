@@ -20,13 +20,15 @@ import com.jetbrains.python.codeInsight.controlflow.ScopeOwner;
 import com.jetbrains.python.impl.codeInsight.dataflow.scope.ScopeUtil;
 import com.jetbrains.python.impl.inspections.quickfix.AddFieldQuickFix;
 import com.jetbrains.python.impl.psi.PyUtil;
-import com.jetbrains.python.psi.*;
 import com.jetbrains.python.impl.psi.impl.PyFunctionBuilder;
 import com.jetbrains.python.impl.refactoring.PyReplaceExpressionUtil;
 import com.jetbrains.python.impl.refactoring.introduce.IntroduceHandler;
 import com.jetbrains.python.impl.refactoring.introduce.IntroduceOperation;
 import com.jetbrains.python.impl.refactoring.introduce.variable.PyIntroduceVariableHandler;
 import com.jetbrains.python.impl.testing.PythonUnitTestUtil;
+import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.application.WriteAction;
 import consulo.codeEditor.CaretModel;
 import consulo.codeEditor.Editor;
@@ -35,8 +37,8 @@ import consulo.dataContext.DataContext;
 import consulo.document.Document;
 import consulo.ide.impl.idea.util.FunctionUtil;
 import consulo.language.ast.ASTNode;
-import consulo.language.editor.refactoring.RefactoringBundle;
 import consulo.language.editor.refactoring.introduce.inplace.InplaceVariableIntroducer;
+import consulo.language.editor.refactoring.localize.RefactoringLocalize;
 import consulo.language.editor.refactoring.util.CommonRefactoringUtil;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
@@ -44,9 +46,11 @@ import consulo.language.psi.PsiReference;
 import consulo.language.psi.scope.LocalSearchScope;
 import consulo.language.psi.search.ReferencesSearch;
 import consulo.language.psi.util.PsiTreeUtil;
+import consulo.localize.LocalizeValue;
 import consulo.project.Project;
-
+import consulo.ui.annotation.RequiredUIAccess;
 import org.jspecify.annotations.Nullable;
+
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,12 +62,12 @@ import java.util.function.Function;
  * @author Dennis.Ushakov
  */
 public class PyIntroduceFieldHandler extends IntroduceHandler {
-
   public PyIntroduceFieldHandler() {
-    super(new IntroduceFieldValidator(), RefactoringBundle.message("introduce.field.title"));
+    super(new IntroduceFieldValidator(), RefactoringLocalize.introduceFieldTitle().get());
   }
 
   @Override
+  @RequiredUIAccess
   public void invoke(Project project, Editor editor, PsiFile file, DataContext dataContext) {
     IntroduceOperation operation = new IntroduceOperation(project, editor, file, null);
     operation.addAvailableInitPlace(InitPlace.CONSTRUCTOR);
@@ -73,6 +77,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
     performAction(operation);
   }
 
+  @RequiredReadAction
   private static boolean isTestClass(PsiFile file, Editor editor) {
     PsiElement element1 = null;
     SelectionModel selectionModel = editor.getSelectionModel();
@@ -97,6 +102,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredWriteAction
   protected PsiElement replaceExpression(PsiElement expression, PyExpression newExpression, IntroduceOperation operation) {
     if (operation.getInitPlace() != InitPlace.SAME_METHOD) {
       return PyReplaceExpressionUtil.replaceExpression(expression, newExpression);
@@ -105,13 +111,16 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredUIAccess
   protected boolean checkEnabled(IntroduceOperation operation) {
     if (PyUtil.getContainingClassOrSelf(operation.getElement()) == null) {
-      CommonRefactoringUtil.showErrorHint(operation.getProject(),
-                                          operation.getEditor(),
-                                          "Cannot introduce field: not in class",
-                                          myDialogTitle,
-                                          getHelpId());
+      CommonRefactoringUtil.showErrorHint(
+        operation.getProject(),
+        operation.getEditor(),
+        LocalizeValue.localizeTODO("Cannot introduce field: not in class"),
+        myDialogTitle,
+        getHelpId()
+      );
       return false;
     }
     if (dependsOnLocalScopeValues(operation.getElement())) {
@@ -138,6 +147,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyReferenceExpression(PyReferenceExpression node) {
       super.visitPyReferenceExpression(node);
       PsiElement result = node.getReference().resolve();
@@ -160,6 +170,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
 
   @Nullable
   @Override
+  @RequiredWriteAction
   protected PsiElement addDeclaration(PsiElement expression,
                                       PsiElement declaration,
                                       IntroduceOperation operation) {
@@ -191,6 +202,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Nullable
+  @RequiredWriteAction
   private static PsiElement addFieldToSetUp(PyClass clazz, Function<String, PyStatement> callback) {
     PyFunction init = clazz.findMethodByName(PythonUnitTestUtil.TESTCASE_SETUP_NAME, false, null);
     if (init != null) {
@@ -206,6 +218,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredReadAction
   protected List<PsiElement> getOccurrences(PsiElement element, PyExpression expression) {
     if (isAssignedLocalVariable(element)) {
       PyFunction function = PsiTreeUtil.getParentOfType(element, PyFunction.class);
@@ -223,6 +236,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredReadAction
   protected PyExpression createExpression(Project project, String name, PsiElement declaration) {
     String text = declaration.getText();
     String self_name = text.substring(0, text.indexOf('.'));
@@ -230,6 +244,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredReadAction
   protected PyAssignmentStatement createDeclaration(Project project, String assignmentText, PsiElement anchor) {
     PyFunction container = PsiTreeUtil.getParentOfType(anchor, PyFunction.class);
     String selfName = PyUtil.getFirstParameterName(container);
@@ -238,6 +253,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredWriteAction
   protected void postRefactoring(PsiElement element) {
     if (isAssignedLocalVariable(element)) {
       element.getParent().delete();
@@ -261,13 +277,16 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredUIAccess
   protected boolean checkIntroduceContext(PsiFile file, Editor editor, PsiElement element) {
     if (element != null && isInStaticMethod(element)) {
-      CommonRefactoringUtil.showErrorHint(file.getProject(),
-                                          editor,
-                                          "Introduce Field refactoring cannot be used in static methods",
-                                          RefactoringBundle.message("introduce.field.title"),
-                                          "refactoring.extractMethod");
+      CommonRefactoringUtil.showErrorHint(
+        file.getProject(),
+        editor,
+        LocalizeValue.localizeTODO("Introduce Field refactoring cannot be used in static methods"),
+        RefactoringLocalize.introduceFieldTitle(),
+        "refactoring.extractMethod"
+      );
       return false;
     }
     return super.checkIntroduceContext(file, editor, element);
@@ -298,6 +317,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
     }
 
     @Override
+    @RequiredReadAction
     public PyStatement apply(String self_name) {
       if (PyNames.CANONICAL_SELF.equals(self_name)) {
         return (PyStatement)myDeclaration;
@@ -312,6 +332,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
   }
 
   @Override
+  @RequiredWriteAction
   protected void performInplaceIntroduce(IntroduceOperation operation) {
     PsiElement statement = performRefactoring(operation);
     // put caret on identifier after "self."
@@ -344,6 +365,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
     private final IntroduceOperation myOperation;
     private final PyIntroduceFieldPanel myPanel;
 
+    @RequiredUIAccess
     public PyInplaceFieldIntroducer(PyTargetExpression target, IntroduceOperation operation, List<PsiElement> occurrences) {
       super(target,
             operation.getEditor(),
@@ -372,6 +394,7 @@ public class PyIntroduceFieldHandler extends IntroduceHandler {
     }
 
     @Override
+    @RequiredUIAccess
     protected void moveOffsetAfter(boolean success) {
       if (success && (myPanel != null && myPanel.getInitPlace() != InitPlace.SAME_METHOD) || myOperation.getInplaceInitPlace() != InitPlace.SAME_METHOD) {
         WriteAction.run(() -> {

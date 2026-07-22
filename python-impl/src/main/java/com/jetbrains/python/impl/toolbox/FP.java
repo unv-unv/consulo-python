@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.toolbox;
 
 import consulo.util.lang.Pair;
@@ -22,11 +21,11 @@ import java.util.*;
 
 /**
 * Tools of functional programming, the notorious half of implementation of Lisp. (And sometimes a shard or two of Haskell.)
-* User: dcheryasov
-* Date: Nov 6, 2009 10:06:50 AM
+ *
+* @author dcheryasov
+* @since 2009-11-06
 */
 public class FP {
-  
   private FP() {
     // do not instantiate
   }
@@ -39,20 +38,22 @@ public class FP {
    * @return list of mapped values.
    */
   public static <S, R> Iterable<R> map(final Lambda1<S, R> lambda, final Iterable<S> source) {
-
-    return new Iterable<R>() {
+    return new Iterable<>() {
       final Iterator<S> feeder = source.iterator();
+      @Override
       public Iterator<R> iterator() {
-        return new Iterator<R>() {
-
+        return new Iterator<>() {
+          @Override
           public boolean hasNext() {
             return feeder.hasNext();
           }
 
+          @Override
           public R next() {
             return lambda.apply(feeder.next());
           }
 
+          @Override
           public void remove() {
             throw new UnsupportedOperationException("Cannot remove from map()");
           }
@@ -68,16 +69,14 @@ public class FP {
     return map(lambda, Arrays.asList(source));
   }
 
-
   /**
    * Same as {@link #map}, but non-lazy an returns a modifiable List.
    */
   public static <S, R> List<R> mapList(Lambda1<S, R> lambda, Iterable<S> source) {
-    List<R> ret = new ArrayList<R>(source instanceof Collection? ((Collection)source).size() : 10);
+    List<R> ret = new ArrayList<>(source instanceof Collection? ((Collection)source).size() : 10);
     for (R what : map(lambda, source)) ret.add(what);
     return ret;
   }
-
 
   /**
    * Apply a two-argument lambda to each sequence element and an accumulator.
@@ -125,11 +124,10 @@ public class FP {
    * Same as {@link #zip(Iterable, Iterable)}, but non-lazy and returns a modifiable List.
    */
   public static <R1, R2> List<Pair<R1, R2>> zipList(Iterable<R1> one, Iterable<R2> two) {
-    List<Pair<R1, R2>> ret = new ArrayList<Pair<R1, R2>>(proposeZippedListLength(one, two, false, false));
+    List<Pair<R1, R2>> ret = new ArrayList<>(proposeZippedListLength(one, two, false, false));
     for (Pair<R1, R2>what : zipInternal(one, two, null, null, false, false)) ret.add(what);
     return ret;
   }
-
 
   /**
    * Zips together two sequences: [a, b,..] + [x, y,..] -> [(a, x), (b, y),..]. Fills missing second elements with filler.
@@ -148,11 +146,10 @@ public class FP {
    * Same as {@link #zip(Iterable, Iterable, Object)}, but non-lazy and returns a modifiable List.
    */
   public static <R1, R2> List<Pair<R1, R2>> zipList(Iterable<R1> one, Iterable<R2> two, R2 filler) {
-    List<Pair<R1, R2>> ret = new ArrayList<Pair<R1, R2>>(proposeZippedListLength(one, two, false, true));
+    List<Pair<R1, R2>> ret = new ArrayList<>(proposeZippedListLength(one, two, false, true));
     for (Pair<R1, R2>what : zipInternal(one, two, null, filler, false, true)) ret.add(what);
     return ret;
   }
-
 
   /**
    * Zips together two sequences: [a, b,..] + [x, y,..] -> [(a, x), (b, y),..]. Fills all missing elements with filler.
@@ -172,7 +169,7 @@ public class FP {
    * Same as {@link #zip(Iterable, Iterable, Object, Object)}, but non-lazy and returns a modifiable List.
    */
   public static <R1, R2> List<Pair<R1, R2>> zipList(Iterable<R1> one, Iterable<R2> two, R1 filler1, R2 filler2) {
-    List<Pair<R1, R2>> ret = new ArrayList<Pair<R1, R2>>(proposeZippedListLength(one, two, true, true));
+    List<Pair<R1, R2>> ret = new ArrayList<>(proposeZippedListLength(one, two, true, true));
     for (Pair<R1, R2>what : zipInternal(one, two, filler1, filler2, true, true)) ret.add(what);
     return ret;
   }
@@ -180,7 +177,7 @@ public class FP {
   /**
    * Tries to determine the size of an array list of exactly the right size to accommodate 
    * the result of {@link #zip(Iterable, Iterable, Object, Object)}. 
-   * @param one first iterbale
+   * @param one first iterable
    * @param two second iterable
    * @param fill1 true if padding of iterable one is required 
    * @param fill2  true if padding of iterable two is required
@@ -216,32 +213,29 @@ public class FP {
     final Iterator<R1> one_iter = one.iterator();
     final Iterator<R2> two_iter = two.iterator();
     
-    return new Iterable<Pair<R1, R2>>() {
-      public Iterator<Pair<R1, R2>> iterator() {
-        
-        return new Iterator<Pair<R1, R2>>() {
+    return () -> new Iterator<>() {
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("Cannot remove from zip()");
+      }
 
-          public void remove() {
-            throw new UnsupportedOperationException("Cannot remove from zip()");
-          }
+      @Override
+      public boolean hasNext() {
+        boolean one_has = one_iter.hasNext();
+        boolean two_has = two_iter.hasNext();
+        return (
+          one_has && two_has ||
+          fill1 && two_has ||
+          fill2 && one_has
+        );
+      }
 
-          public boolean hasNext() {
-            boolean one_has = one_iter.hasNext();
-            boolean two_has = two_iter.hasNext();
-            return (
-              one_has && two_has ||
-              fill1 && two_has ||
-              fill2 && one_has
-            );
-          }
-
-          public Pair<R1, R2> next() {
-            if (one_iter.hasNext() && two_iter.hasNext()) return new Pair<R1, R2>(one_iter.next(), two_iter.next());
-            if (fill1 && two_iter.hasNext()) return new Pair<R1, R2>(filler1, two_iter.next());
-            if (fill2 && one_iter.hasNext()) return new Pair<R1, R2>(one_iter.next(), filler2);
-            throw new NoSuchElementException();
-          }
-        }; 
+      @Override
+      public Pair<R1, R2> next() {
+        if (one_iter.hasNext() && two_iter.hasNext()) return Pair.create(one_iter.next(), two_iter.next());
+        if (fill1 && two_iter.hasNext()) return Pair.create(filler1, two_iter.next());
+        if (fill2 && one_iter.hasNext()) return Pair.create(one_iter.next(), filler2);
+        throw new NoSuchElementException();
       }
     };
   }
@@ -252,12 +246,8 @@ public class FP {
    * @param g second (outer) function
    * @return their combination, f o g
    */
-  public static <A1, R1, R2> Lambda1<A1, R2> combine(final Lambda1<A1, R1> f, final Lambda1<R1, R2> g) {
-    return new Lambda1<A1, R2>() {
-      public R2 apply(A1 arg) {
-        return g.apply(f.apply(arg));
-      }
-    };
+  public static <A1, R1, R2> Lambda1<A1, R2> combine(Lambda1<A1, R1> f, Lambda1<R1, R2> g) {
+    return arg -> g.apply(f.apply(arg));
   }
 
   // TODO: add slices, array wrapping %)
@@ -281,6 +271,7 @@ public class FP {
    * Useful for {@link FP#fold(Lambda2, Iterable, Object) fold}ing into a string. Element's {@code .toString()} is appended to the string builder.
    */
   public static class StringCollector<T> implements FP.Lambda2<StringBuilder, T, StringBuilder>  {
+    @Override
     public StringBuilder apply(StringBuilder builder, T arg2) {
       if (arg2 == null) {
         throw new IllegalArgumentException("Null item in list of strings to concatenate. Text so far: " + builder.toString());
@@ -288,5 +279,4 @@ public class FP {
       return builder.append(arg2.toString());
     }
   }
-
 }

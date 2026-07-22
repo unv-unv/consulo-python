@@ -15,22 +15,18 @@
  */
 package com.jetbrains.python.impl.psi.impl;
 
-import org.jspecify.annotations.Nullable;
-import consulo.language.ast.ASTNode;
-import consulo.language.psi.PsiElement;
-import consulo.language.psi.util.PsiTreeUtil;
 import com.jetbrains.python.FunctionParameter;
-import com.jetbrains.python.nameResolver.FQNamesProvider;
-import com.jetbrains.python.psi.PyArgumentList;
-import com.jetbrains.python.psi.PyCallExpression;
-import com.jetbrains.python.psi.PyCallable;
-import com.jetbrains.python.psi.PyElementVisitor;
-import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.psi.PyParenthesizedExpression;
 import com.jetbrains.python.impl.psi.PyUtil;
+import com.jetbrains.python.nameResolver.FQNamesProvider;
+import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.language.ast.ASTNode;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.util.PsiTreeUtil;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @author yole
@@ -50,36 +46,44 @@ public class PyCallExpressionImpl extends PyElementImpl implements PyCallExpress
 	}
 
 	@Nullable
+    @Override
+    @RequiredReadAction
 	public PyExpression getCallee()
 	{
 		// peel off any parens, because we may have smth like (lambda x: x+1)(2)
 		PsiElement seeker = getFirstChild();
-		while(seeker instanceof PyParenthesizedExpression)
+		while(seeker instanceof PyParenthesizedExpression parenthesizedExpr)
 		{
-			seeker = ((PyParenthesizedExpression) seeker).getContainedExpression();
+			seeker = parenthesizedExpr.getContainedExpression();
 		}
-		return seeker instanceof PyExpression ? (PyExpression) seeker : null;
+		return seeker instanceof PyExpression expression ? expression : null;
 	}
 
-	public PyArgumentList getArgumentList()
+	@Override
+    @RequiredReadAction
+    public PyArgumentList getArgumentList()
 	{
 		return PsiTreeUtil.getChildOfType(this, PyArgumentList.class);
 	}
 
-	public PyExpression[] getArguments()
+	@Override
+    @RequiredReadAction
+    public PyExpression[] getArguments()
 	{
 		PyArgumentList argList = getArgumentList();
 		return argList != null ? argList.getArguments() : PyExpression.EMPTY_ARRAY;
 	}
 
 	@Override
+    @RequiredReadAction
 	public <T extends PsiElement> T getArgument(int index, Class<T> argClass)
 	{
 		PyExpression[] args = getArguments();
 		return args.length > index && argClass.isInstance(args[index]) ? argClass.cast(args[index]) : null;
 	}
 
-	@Override
+    @Override
+    @RequiredReadAction
 	public <T extends PsiElement> T getArgument(int index, String keyword, Class<T> argClass)
 	{
 		PyExpression argument = getKeywordArgument(keyword);
@@ -103,12 +107,14 @@ public class PyCallExpressionImpl extends PyElementImpl implements PyCallExpress
 		return PyCallExpressionHelper.getKeywordArgument(this, keyword);
 	}
 
-	public void addArgument(PyExpression expression)
+	@Override
+    public void addArgument(PyExpression expression)
 	{
 		PyCallExpressionHelper.addArgument(this, expression);
 	}
 
-	public PyMarkedCallee resolveCallee(PyResolveContext resolveContext)
+	@Override
+    public PyMarkedCallee resolveCallee(PyResolveContext resolveContext)
 	{
 		return PyCallExpressionHelper.resolveCallee(this, resolveContext);
 	}
@@ -119,7 +125,8 @@ public class PyCallExpressionImpl extends PyElementImpl implements PyCallExpress
 		return PyCallExpressionHelper.resolveCalleeFunction(this, resolveContext);
 	}
 
-	public PyMarkedCallee resolveCallee(PyResolveContext resolveContext, int offset)
+	@Override
+    public PyMarkedCallee resolveCallee(PyResolveContext resolveContext, int offset)
 	{
 		return PyCallExpressionHelper.resolveCallee(this, resolveContext, offset);
 	}
@@ -149,12 +156,14 @@ public class PyCallExpressionImpl extends PyElementImpl implements PyCallExpress
 	}
 
 	@Override
+    @RequiredReadAction
 	public String toString()
 	{
 		return "PyCallExpression: " + PyUtil.getReadableRepr(getCallee(), true); //or: getCalledFunctionReference().getReferencedName();
 	}
 
-	public PyType getType(TypeEvalContext context, TypeEvalContext.Key key)
+	@Override
+    public PyType getType(TypeEvalContext context, TypeEvalContext.Key key)
 	{
 		return PyCallExpressionHelper.getCallType(this, context);
 	}

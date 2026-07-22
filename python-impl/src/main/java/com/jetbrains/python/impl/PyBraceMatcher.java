@@ -38,10 +38,12 @@ public class PyBraceMatcher implements PairedBraceMatcher {
       new BracePair(PyTokenTypes.LBRACKET, PyTokenTypes.RBRACKET, false), new BracePair(PyTokenTypes.LBRACE, PyTokenTypes.RBRACE, false)};
   }
 
+  @Override
   public BracePair[] getPairs() {
     return PAIRS;
   }
 
+  @Override
   public boolean isPairedBracesAllowedBeforeType(IElementType lbraceType, @Nullable IElementType contextType) {
     return
       PyTokenTypes.WHITESPACE_OR_LINEBREAK.contains(contextType) ||

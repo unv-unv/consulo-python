@@ -16,10 +16,10 @@
 package com.jetbrains.python.impl.inspections.quickfix;
 
 import com.jetbrains.python.psi.PyFile;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiElement;
-import consulo.language.psi.PsiFile;
 import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
@@ -34,11 +34,11 @@ public class MoveFromFutureImportQuickFix implements LocalQuickFix {
         return PyLocalize.qfixMoveFromFutureImport();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiElement problemElement = descriptor.getPsiElement();
-        PsiFile psiFile = problemElement.getContainingFile();
-        if (psiFile instanceof PyFile) {
-            PyFile file = (PyFile) psiFile;
+        if (problemElement.getContainingFile() instanceof PyFile file) {
             file.addBefore(problemElement, file.getStatements().get(0));
             problemElement.delete();
         }

@@ -19,23 +19,24 @@ import com.intellij.java.language.psi.PsiClass;
 import com.intellij.java.language.psi.PsiField;
 import com.intellij.java.language.psi.PsiMethod;
 import com.jetbrains.python.impl.psi.impl.ResolveResultList;
+import com.jetbrains.python.impl.psi.resolve.CompletionVariantsProcessor;
 import com.jetbrains.python.psi.AccessDirection;
 import com.jetbrains.python.psi.PyCallSiteExpression;
 import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.impl.psi.resolve.CompletionVariantsProcessor;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.resolve.RatedResolveResult;
 import com.jetbrains.python.psi.types.PyCallableParameter;
 import com.jetbrains.python.psi.types.PyClassLikeType;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.TypeEvalContext;
-import consulo.application.util.function.Processor;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.resolve.ResolveState;
 import consulo.language.util.ProcessingContext;
-
 import org.jspecify.annotations.Nullable;
+
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author yole
@@ -50,6 +51,7 @@ public class PyJavaClassType implements PyClassLikeType {
   }
 
   @Nullable
+  @Override
   public List<? extends RatedResolveResult> resolveMember(String name,
                                                           @Nullable PyExpression location,
                                                           AccessDirection direction,
@@ -79,19 +81,17 @@ public class PyJavaClassType implements PyClassLikeType {
     return null;
   }
 
+  @Override
   public Object[] getCompletionVariants(String completionPrefix, PsiElement location, ProcessingContext context) {
     CompletionVariantsProcessor processor = new CompletionVariantsProcessor(location);
     myClass.processDeclarations(processor, ResolveState.initial(), null, location);
     return processor.getResult();
   }
 
+  @Override
+  @RequiredReadAction
   public String getName() {
-    if (myClass != null) {
-      return myClass.getName();
-    }
-    else {
-      return null;
-    }
+    return myClass != null ? myClass.getName() : null;
   }
 
   @Override
@@ -155,13 +155,13 @@ public class PyJavaClassType implements PyClassLikeType {
   }
 
   @Override
-  public void visitMembers(Processor<PsiElement> processor, boolean inherited, TypeEvalContext context) {
+  public void visitMembers(Predicate<PsiElement> processor, boolean inherited, TypeEvalContext context) {
     for (PsiMethod method : myClass.getAllMethods()) {
-      processor.process(method);
+      processor.test(method);
     }
 
     for (PsiField field : myClass.getAllFields()) {
-      processor.process(field);
+      processor.test(field);
     }
 
     if (!inherited) {
@@ -176,6 +176,7 @@ public class PyJavaClassType implements PyClassLikeType {
   }
 
   @Override
+  @RequiredReadAction
   public Set<String> getMemberNames(boolean inherited, TypeEvalContext context) {
     Set<String> result = new LinkedHashSet<>();
 
@@ -223,6 +224,7 @@ public class PyJavaClassType implements PyClassLikeType {
   }
 
   @Override
+  @RequiredReadAction
   public boolean isValid() {
     return myClass.isValid();
   }
@@ -238,24 +240,13 @@ public class PyJavaClassType implements PyClassLikeType {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof PyJavaClassType)) {
-      return false;
-    }
-
-    PyJavaClassType type = (PyJavaClassType)o;
-
-    if (myDefinition != type.myDefinition) {
-      return false;
-    }
-    if (myClass != null ? !myClass.equals(type.myClass) : type.myClass != null) {
-      return false;
-    }
-
-    return true;
+    return o instanceof PyJavaClassType type
+      && myDefinition == type.myDefinition
+      && Objects.equals(myClass, type.myClass);
   }
 
   @Override

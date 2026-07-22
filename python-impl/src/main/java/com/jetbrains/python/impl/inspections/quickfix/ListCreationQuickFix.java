@@ -16,6 +16,7 @@
 package com.jetbrains.python.impl.inspections.quickfix;
 
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.localize.LocalizeValue;
@@ -30,7 +31,7 @@ import java.util.List;
  */
 public class ListCreationQuickFix implements LocalQuickFix {
     private final PyAssignmentStatement myStatement;
-    private final List<PyExpressionStatement> myStatements = new ArrayList<PyExpressionStatement>();
+    private final List<PyExpressionStatement> myStatements = new ArrayList<>();
 
     public ListCreationQuickFix(PyAssignmentStatement statement) {
         myStatement = statement;
@@ -45,6 +46,8 @@ public class ListCreationQuickFix implements LocalQuickFix {
         return PyLocalize.qfixListCreation();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
         StringBuilder stringBuilder = new StringBuilder();
@@ -62,6 +65,7 @@ public class ListCreationQuickFix implements LocalQuickFix {
             statement.delete();
         }
         assignedValue.replace(
-            elementGenerator.createExpressionFromText("[" + stringBuilder.substring(0, stringBuilder.length() - 2) + "]"));
+            elementGenerator.createExpressionFromText("[" + stringBuilder.substring(0, stringBuilder.length() - 2) + "]")
+        );
     }
 }

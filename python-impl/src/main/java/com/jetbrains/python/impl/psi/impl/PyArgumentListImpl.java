@@ -24,6 +24,8 @@ import com.jetbrains.python.impl.PyElementTypes;
 import com.jetbrains.python.impl.PythonDialectsTokenSetProvider;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.ast.ASTNode;
 import consulo.language.ast.IElementType;
 import consulo.language.ast.TokenSet;
@@ -71,12 +73,15 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 		return result;
 	}
 
-	public PyExpression[] getArguments()
+	@Override
+    public PyExpression[] getArguments()
 	{
 		return childrenToPsi(PythonDialectsTokenSetProvider.INSTANCE.getExpressionTokens(), PyExpression.EMPTY_ARRAY);
 	}
 
-	@Nullable
+    @Nullable
+    @Override
+    @RequiredReadAction
 	public PyKeywordArgument getKeywordArgument(String name)
 	{
 		ASTNode node = getNode().getFirstChildNode();
@@ -97,6 +102,7 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 	}
 
 	@Override
+    @RequiredWriteAction
 	public void addArgument(PyExpression arg)
 	{
 		PyElementGenerator generator = new PyElementGeneratorImpl(getProject());
@@ -112,42 +118,30 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 		}
 
 
-		if(arg instanceof PyKeywordArgument)
-		{
-			if(parameters.isEmpty())
-			{
+		if (arg instanceof PyKeywordArgument) {
+			if (parameters.isEmpty()) {
 				generator.insertItemIntoListRemoveRedundantCommas(this, keywordArguments.getLast(), arg);
 			}
-			else
-			{
-				if(keywordArguments.isEmpty())
-				{
-					generator.insertItemIntoListRemoveRedundantCommas(this, parameters.getLast(), arg);
-				}
-				else
-				{
-					generator.insertItemIntoListRemoveRedundantCommas(this, keywordArguments.getLast(), arg);
-				}
-			}
+			else if (keywordArguments.isEmpty()) {
+                generator.insertItemIntoListRemoveRedundantCommas(this, parameters.getLast(), arg);
+            }
+            else {
+                generator.insertItemIntoListRemoveRedundantCommas(this, keywordArguments.getLast(), arg);
+            }
 		}
-		else
-		{
-			if(parameters.isEmpty())
-			{
-				generator.insertItemIntoListRemoveRedundantCommas(this, null, arg);
-			}
-			else
-			{
-				generator.insertItemIntoListRemoveRedundantCommas(this, parameters.getLast(), arg);
-			}
-		}
+		else if (parameters.isEmpty()) {
+            generator.insertItemIntoListRemoveRedundantCommas(this, null, arg);
+        }
+        else {
+            generator.insertItemIntoListRemoveRedundantCommas(this, parameters.getLast(), arg);
+        }
 	}
-
 
 	/**
 	 * @return parameters (as opposite to keyword arguments)
 	 */
-	private Deque<PyExpression> getParameters()
+	@RequiredReadAction
+    private Deque<PyExpression> getParameters()
 	{
 		PyExpression[] childrenOfType = PsiTreeUtil.getChildrenOfType(this, PyExpression.class);
 		if(childrenOfType == null)
@@ -160,12 +154,15 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 	/**
 	 * @return keyword arguments (as opposite to parameters)
 	 */
-	private Deque<PyKeywordArgument> getKeyWordArguments()
+	@RequiredReadAction
+    private Deque<PyKeywordArgument> getKeyWordArguments()
 	{
 		return Queues.newArrayDeque(PsiTreeUtil.findChildrenOfType(this, PyKeywordArgument.class));
 	}
 
-	public void addArgumentFirst(PyExpression arg)
+	@Override
+    @RequiredWriteAction
+    public void addArgumentFirst(PyExpression arg)
 	{
 		ASTNode node = getNode();
 		ASTNode[] pars = node.getChildren(TokenSet.create(PyTokenTypes.LPAR));
@@ -230,6 +227,7 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 		return false;
 	}
 
+    @RequiredWriteAction
 	private void addArgumentLastWithoutComma(PyExpression arg)
 	{
 		ASTNode par = getClosingParen();
@@ -252,6 +250,8 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 	}
 
 	@Nullable
+    @Override
+    @RequiredReadAction
 	public ASTNode getClosingParen()
 	{
 		ASTNode node = getNode();
@@ -259,7 +259,8 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 		return children.length == 0 ? null : children[children.length - 1];
 	}
 
-	private void addArgumentNode(PyExpression arg, ASTNode beforeThis, boolean commaFirst)
+	@RequiredWriteAction
+    private void addArgumentNode(PyExpression arg, ASTNode beforeThis, boolean commaFirst)
 	{
 		ASTNode comma = PyElementGenerator.getInstance(getProject()).createComma();
 		ASTNode node = getNode();
@@ -278,7 +279,9 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 		}
 	}
 
-	public void addArgumentAfter(PyExpression argument, @Nullable PyExpression afterThis)
+	@Override
+    @RequiredWriteAction
+    public void addArgumentAfter(PyExpression argument, @Nullable PyExpression afterThis)
 	{
 		if(afterThis == null)
 		{
@@ -338,12 +341,15 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 	}
 
 	@Nullable
+    @Override
+    @RequiredReadAction
 	public PyCallExpression getCallExpression()
 	{
 		return PsiTreeUtil.getParentOfType(this, PyCallExpression.class);
 	}
 
 	@Override
+    @RequiredWriteAction
 	public void deleteChildInternal(ASTNode node)
 	{
 		if(ArrayUtil.contains(node.getPsi(), getArguments()))
@@ -364,6 +370,7 @@ public class PyArgumentListImpl extends PyElementImpl implements PyArgumentList
 
 	@Nullable
 	@Override
+    @RequiredReadAction
 	public PyExpression getValueExpressionForParam(FunctionParameter parameter)
 	{
 		String parameterName = parameter.getName();

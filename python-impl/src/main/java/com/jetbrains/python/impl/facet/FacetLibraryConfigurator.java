@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.facet;
 
-import consulo.application.ApplicationManager;
+import consulo.application.Application;
 import consulo.content.base.BinariesOrderRootType;
 import consulo.content.library.Library;
 import consulo.content.library.LibraryTable;
@@ -29,12 +28,13 @@ import consulo.module.content.layer.orderEntry.OrderEntry;
 import consulo.module.content.util.OrderEntryUtil;
 import consulo.project.Project;
 import consulo.project.content.library.ProjectLibraryTable;
+import consulo.ui.annotation.RequiredUIAccess;
 import consulo.virtualFileSystem.LocalFileSystem;
 import consulo.virtualFileSystem.VirtualFile;
 import consulo.virtualFileSystem.archive.ArchiveFileType;
 import consulo.virtualFileSystem.archive.ArchiveVfsUtil;
-
 import org.jspecify.annotations.Nullable;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -47,36 +47,37 @@ public class FacetLibraryConfigurator {
   private FacetLibraryConfigurator() {
   }
 
-  public static void attachLibrary(final Module module,
-                                   @Nullable final ModifiableRootModel existingModel,
-                                   final String libraryName,
-                                   final List<String> paths) {
-    ApplicationManager.getApplication().runWriteAction(new Runnable() {
-      public void run() {
-        // add all paths to library
-        ModifiableRootModel model =
-          existingModel != null ? existingModel : ModuleRootManager.getInstance(module).getModifiableModel();
-        LibraryOrderEntry orderEntry = OrderEntryUtil.findLibraryOrderEntry(model, libraryName);
-        if (orderEntry != null) {
-          // update existing
-          Library lib = orderEntry.getLibrary();
-          if (lib != null) {
-            fillLibrary(module.getProject(), lib, paths);
-            if (existingModel == null) {
-              model.commit();
-            }
-            return;
+  @RequiredUIAccess
+  public static void attachLibrary(
+      Module module,
+      @Nullable ModifiableRootModel existingModel,
+      String libraryName,
+      List<String> paths
+  ) {
+    Application.get().runWriteAction(() -> {
+      // add all paths to library
+      ModifiableRootModel model =
+        existingModel != null ? existingModel : ModuleRootManager.getInstance(module).getModifiableModel();
+      LibraryOrderEntry orderEntry = OrderEntryUtil.findLibraryOrderEntry(model, libraryName);
+      if (orderEntry != null) {
+        // update existing
+        Library lib = orderEntry.getLibrary();
+        if (lib != null) {
+          fillLibrary(module.getProject(), lib, paths);
+          if (existingModel == null) {
+            model.commit();
           }
+          return;
         }
-        // create new
-        LibraryTable.ModifiableModel projectLibrariesModel = ProjectLibraryTable.getInstance(model.getProject()).getModifiableModel();
-        Library lib = projectLibrariesModel.createLibrary(libraryName);
-        fillLibrary(module.getProject(), lib, paths);
-        projectLibrariesModel.commit();
-        model.addLibraryEntry(lib);
-        if (existingModel == null) {
-          model.commit();
-        }
+      }
+      // create new
+      LibraryTable.ModifiableModel projectLibrariesModel = ProjectLibraryTable.getInstance(model.getProject()).getModifiableModel();
+      Library lib = projectLibrariesModel.createLibrary(libraryName);
+      fillLibrary(module.getProject(), lib, paths);
+      projectLibrariesModel.commit();
+      model.addLibraryEntry(lib);
+      if (existingModel == null) {
+        model.commit();
       }
     });
   }
@@ -86,7 +87,7 @@ public class FacetLibraryConfigurator {
     for (String root : lib.getUrls(BinariesOrderRootType.ID)) {
       modifiableModel.removeRoot(root, BinariesOrderRootType.ID);
     }
-    Set<VirtualFile> roots = new HashSet<VirtualFile>();
+    Set<VirtualFile> roots = new HashSet<>();
     ProjectRootManager rootManager = ProjectRootManager.getInstance(project);
     Collections.addAll(roots, rootManager.getContentRoots());
     Collections.addAll(roots, rootManager.getContentSourceRoots());
@@ -111,19 +112,18 @@ public class FacetLibraryConfigurator {
     modifiableModel.commit();
   }
 
-  public static void detachLibrary(final Module module, final String libraryName) {
-    ApplicationManager.getApplication().runWriteAction(new Runnable() {
-      public void run() {
-        // remove the library
-        ModifiableRootModel model = ModuleRootManager.getInstance(module).getModifiableModel();
-        OrderEntry entry = OrderEntryUtil.findLibraryOrderEntry(model, libraryName);
-        if (entry == null) {
-          model.dispose();
-        }
-        else {
-          model.removeOrderEntry(entry);
-          model.commit();
-        }
+  @RequiredUIAccess
+  public static void detachLibrary(Module module, String libraryName) {
+    Application.get().runWriteAction(() -> {
+      // remove the library
+      ModifiableRootModel model = ModuleRootManager.getInstance(module).getModifiableModel();
+      OrderEntry entry = OrderEntryUtil.findLibraryOrderEntry(model, libraryName);
+      if (entry == null) {
+        model.dispose();
+      }
+      else {
+        model.removeOrderEntry(entry);
+        model.commit();
       }
     });
   }

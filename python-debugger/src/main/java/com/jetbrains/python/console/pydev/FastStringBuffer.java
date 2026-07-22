@@ -352,9 +352,7 @@ public final class FastStringBuffer {
         return this.value[this.count-1];
     }
 
-
     public final static class BackwardCharIterator implements Iterable<Character>{
-
         private int i;
         private FastStringBuffer fastStringBuffer;
 
@@ -363,17 +361,20 @@ public final class FastStringBuffer {
             i = fastStringBuffer.length();
         }
 
+        @Override
         public Iterator<Character> iterator() {
-            return new Iterator<Character>(){
-
+            return new Iterator<>(){
+                @Override
                 public boolean hasNext() {
                     return i > 0;
                 }
 
+                @Override
                 public Character next() {
                     return fastStringBuffer.value[--i];
                 }
 
+                @Override
                 public void remove() {
                     throw new RuntimeException("Not implemented");
                 }
@@ -460,5 +461,4 @@ public final class FastStringBuffer {
     public void setLength(int i) {
         this.count = i;
     }
-
 }

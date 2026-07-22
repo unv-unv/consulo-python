@@ -17,6 +17,7 @@ package com.jetbrains.python.impl.inspections.quickfix;
 
 import com.jetbrains.python.impl.psi.PyUtil;
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiElement;
@@ -39,6 +40,8 @@ public class PyAddPropertyForFieldQuickFix implements LocalQuickFix {
         return myName;
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiElement element = descriptor.getPsiElement();
         if (element instanceof PyReferenceExpression) {
@@ -47,8 +50,7 @@ public class PyAddPropertyForFieldQuickFix implements LocalQuickFix {
                 return;
             }
             PsiElement resolved = reference.resolve();
-            if (resolved instanceof PyTargetExpression) {
-                PyTargetExpression target = (PyTargetExpression) resolved;
+            if (resolved instanceof PyTargetExpression target) {
                 PyClass containingClass = target.getContainingClass();
                 if (containingClass != null) {
                     String name = target.getName();

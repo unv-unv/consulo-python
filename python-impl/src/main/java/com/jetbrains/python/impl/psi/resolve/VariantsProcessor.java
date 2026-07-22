@@ -15,31 +15,28 @@
  */
 package com.jetbrains.python.impl.psi.resolve;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jspecify.annotations.Nullable;
-import consulo.util.lang.function.Condition;
-import consulo.util.dataholder.Key;
-import consulo.util.io.FileUtil;
+import com.jetbrains.python.impl.psi.PyUtil;
+import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiInvalidElementAccessException;
 import consulo.language.psi.PsiNamedElement;
-import consulo.language.psi.resolve.ResolveState;
 import consulo.language.psi.resolve.PsiScopeProcessor;
+import consulo.language.psi.resolve.ResolveState;
 import consulo.language.psi.util.QualifiedName;
-import com.jetbrains.python.psi.PyElement;
-import com.jetbrains.python.psi.PyFile;
-import com.jetbrains.python.psi.PyImportElement;
-import com.jetbrains.python.psi.PyImportedNameDefiner;
-import com.jetbrains.python.psi.PyReferenceExpression;
-import com.jetbrains.python.impl.psi.PyUtil;
+import consulo.util.dataholder.Key;
+import consulo.util.io.FileUtil;
+import org.jspecify.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 
 public abstract class VariantsProcessor implements PsiScopeProcessor
 {
 	protected final PsiElement myContext;
-	protected Condition<PsiElement> myNodeFilter;
-	protected Condition<String> myNameFilter;
+	protected Predicate<PsiElement> myNodeFilter;
+	protected Predicate<String> myNameFilter;
 
 	protected boolean myPlainNamesOnly = false; // if true, add insert handlers to known things like functions
 	private List<String> myAllowedNames;
@@ -51,7 +48,7 @@ public abstract class VariantsProcessor implements PsiScopeProcessor
 		myContext = context;
 	}
 
-	public VariantsProcessor(PsiElement context, @Nullable Condition<PsiElement> nodeFilter, @Nullable Condition<String> nameFilter)
+	public VariantsProcessor(PsiElement context, @Nullable Predicate<PsiElement> nodeFilter, @Nullable Predicate<String> nameFilter)
 	{
 		myContext = context;
 		myNodeFilter = nodeFilter;
@@ -68,27 +65,25 @@ public abstract class VariantsProcessor implements PsiScopeProcessor
 		myPlainNamesOnly = plainNamesOnly;
 	}
 
-
-	@Override
+    @Override
+    @RequiredReadAction
 	public boolean execute(PsiElement element, ResolveState substitutor)
 	{
-		if(myNodeFilter != null && !myNodeFilter.value(element))
+		if(myNodeFilter != null && !myNodeFilter.test(element))
 		{
 			return true; // skip whatever the filter rejects
 		}
 		// TODO: refactor to look saner; much code duplication
-		if(element instanceof PsiNamedElement)
+		if(element instanceof PsiNamedElement psiNamedElement)
 		{
-			PsiNamedElement psiNamedElement = (PsiNamedElement) element;
 			String name = PyUtil.getElementNameWithoutExtension(psiNamedElement);
 			if(name != null && nameIsAcceptable(name))
 			{
 				addElement(name, psiNamedElement);
 			}
 		}
-		else if(element instanceof PyReferenceExpression)
+		else if(element instanceof PyReferenceExpression expr)
 		{
-			PyReferenceExpression expr = (PyReferenceExpression) element;
 			String referencedName = expr.getReferencedName();
 			if(nameIsAcceptable(referencedName))
 			{
@@ -98,9 +93,8 @@ public abstract class VariantsProcessor implements PsiScopeProcessor
 		else if(element instanceof PyImportedNameDefiner)
 		{
 			boolean handledAsImported = false;
-			if(element instanceof PyImportElement)
+			if(element instanceof PyImportElement importElement)
 			{
-				PyImportElement importElement = (PyImportElement) element;
 				handledAsImported = handleImportElement(importElement);
 			}
 			if(!handledAsImported)
@@ -166,16 +160,12 @@ public abstract class VariantsProcessor implements PsiScopeProcessor
 		{
 			return false;
 		}
-		if(myNameFilter != null && !myNameFilter.value(name))
+		if(myNameFilter != null && !myNameFilter.test(name))
 		{
 			return false;
 		}
-		if(myAllowedNames != null && !myAllowedNames.contains(name))
-		{
-			return false;
-		}
-		return true;
-	}
+        return myAllowedNames == null || myAllowedNames.contains(name);
+    }
 
 	@Override
 	@Nullable

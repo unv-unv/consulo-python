@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.codeInsight;
 
 import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.PythonLanguage;
 import com.jetbrains.python.impl.psi.PyUtil;
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.codeEditor.Editor;
 import consulo.language.ast.ASTNode;
@@ -32,12 +32,14 @@ import consulo.language.psi.util.PsiTreeUtil;
 
 /**
  * Provides reaction on ctrl+click for {@code break} and {@code continue} statements.
- * User: dcheryasov
- * Date: Nov 5, 2009 4:58:54 AM
+ * @author dcheryasov
+ * @since 2009-11-05
  */
 @ExtensionImpl
 public class PyBreakContinueGotoProvider extends GotoDeclarationHandlerBase {
 
+  @Override
+  @RequiredReadAction
   public PsiElement getGotoDeclarationTarget(PsiElement source, Editor editor) {
     if (source.getLanguage() instanceof PythonLanguage) {
       PyLoopStatement loop = PsiTreeUtil.getParentOfType(source, PyLoopStatement.class, false, PyFunction.class, PyClass.class);

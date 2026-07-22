@@ -15,24 +15,22 @@
  */
 package com.jetbrains.python.psi;
 
-import java.util.List;
-import java.util.Map;
-
-
-
-import org.jspecify.annotations.Nullable;
+import com.jetbrains.python.codeInsight.controlflow.ScopeOwner;
+import com.jetbrains.python.psi.stubs.PyClassStub;
+import com.jetbrains.python.psi.types.PyClassLikeType;
+import com.jetbrains.python.psi.types.PyType;
+import com.jetbrains.python.psi.types.TypeEvalContext;
 import consulo.language.ast.ASTNode;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiNameIdentifierOwner;
 import consulo.language.psi.StubBasedPsiElement;
 import consulo.language.psi.resolve.PsiScopeProcessor;
 import consulo.util.collection.ArrayFactory;
-import consulo.application.util.function.Processor;
-import com.jetbrains.python.codeInsight.controlflow.ScopeOwner;
-import com.jetbrains.python.psi.stubs.PyClassStub;
-import com.jetbrains.python.psi.types.PyClassLikeType;
-import com.jetbrains.python.psi.types.PyType;
-import com.jetbrains.python.psi.types.TypeEvalContext;
+import org.jspecify.annotations.Nullable;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Represents a class declaration in source.
@@ -40,7 +38,7 @@ import com.jetbrains.python.psi.types.TypeEvalContext;
 public interface PyClass extends PsiNameIdentifierOwner, PyStatement, PyDocStringOwner, StubBasedPsiElement<PyClassStub>, ScopeOwner, PyDecoratable, PyTypedElement, PyQualifiedNameOwner,
 		PyStatementListContainer, PyWithAncestors
 {
-	ArrayFactory<PyClass> ARRAY_FACTORY = count -> new PyClass[count];
+	ArrayFactory<PyClass> ARRAY_FACTORY = PyClass[]::new;
 
 	@Nullable
 	ASTNode getNameNode();
@@ -142,21 +140,21 @@ public interface PyClass extends PsiNameIdentifierOwner, PyStatement, PyDocStrin
 
 	/**
 	 * Apply a processor to every method, looking at superclasses in method resolution order as needed.
-	 * Consider using {@link PyClassLikeType#visitMembers(Processor, boolean, TypeEvalContext)}
+	 * Consider using {@link PyClassLikeType#visitMembers(Predicate, boolean, TypeEvalContext)}
 	 *
 	 * @param processor what to apply
 	 * @param inherited true: search in superclasses, too.
 	 * @param context   loose context will be used if no context provided
-	 * @see PyClassLikeType#visitMembers(Processor, boolean, TypeEvalContext)
+	 * @see PyClassLikeType#visitMembers(Predicate, boolean, TypeEvalContext)
 	 */
-	boolean visitMethods(Processor<PyFunction> processor, boolean inherited, @Nullable TypeEvalContext context);
+	boolean visitMethods(Predicate<PyFunction> processor, boolean inherited, @Nullable TypeEvalContext context);
 
 	/**
-	 * Consider using {@link PyClassLikeType#visitMembers(Processor, boolean, TypeEvalContext)}
+	 * Consider using {@link PyClassLikeType#visitMembers(Predicate, boolean, TypeEvalContext)}
 	 *
-	 * @see PyClassLikeType#visitMembers(Processor, boolean, TypeEvalContext)
+	 * @see PyClassLikeType#visitMembers(Predicate, boolean, TypeEvalContext)
 	 */
-	boolean visitClassAttributes(Processor<PyTargetExpression> processor, boolean inherited, TypeEvalContext context);
+	boolean visitClassAttributes(Predicate<PyTargetExpression> processor, boolean inherited, TypeEvalContext context);
 
 	/**
 	 * Effectively collects assignments inside the class body.
@@ -214,7 +212,7 @@ public interface PyClass extends PsiNameIdentifierOwner, PyStatement, PyDocStrin
 	 * @return a property that processor accepted, or null.
 	 */
 	@Nullable
-	Property scanProperties(Processor<Property> processor, boolean inherited);
+	Property scanProperties(Predicate<Property> processor, boolean inherited);
 
 	/**
 	 * Non-recursively searches for a property for which the given function is a getter, setter or deleter.
@@ -251,6 +249,7 @@ public interface PyClass extends PsiNameIdentifierOwner, PyStatement, PyDocStrin
 	List<String> getOwnSlots();
 
 	@Nullable
+    @Override
 	String getDocStringValue();
 
 	boolean processClassLevelDeclarations(PsiScopeProcessor processor);

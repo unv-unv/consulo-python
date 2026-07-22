@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.psi.stubs;
 
 import consulo.language.psi.stub.StubInputStream;
@@ -32,8 +31,8 @@ import java.io.IOException;
 
 /**
  * Packs property description for storage in a stub.
- * User: dcheryasov
- * Date: Jun 3, 2010 6:46:01 AM
+ * @author dcheryasov
+ * @since 2010-06-03
  */
 public class PropertyStubStorage extends PropertyBunch<String> implements CustomTargetExpressionStub {
 
@@ -41,7 +40,7 @@ public class PropertyStubStorage extends PropertyBunch<String> implements Custom
   protected Maybe<String> translate(@Nullable PyExpression ref) {
     if (ref != null) {
       String name = ref.getName();
-      return name != null ? new Maybe<String>(name) : unknown;
+      return name != null ? new Maybe<>(name) : unknown;
     }
     return none;
   }
@@ -58,6 +57,7 @@ public class PropertyStubStorage extends PropertyBunch<String> implements Custom
     return PropertyStubType.class;
   }
 
+  @Override
   public void serialize(StubOutputStream stream) throws IOException {
     writeOne(myGetter, stream);
     writeOne(mySetter, stream);
@@ -81,8 +81,8 @@ public class PropertyStubStorage extends PropertyBunch<String> implements Custom
     return me;
   }
 
-  private static final Maybe<String> unknown = new Maybe<String>();
-  private static final Maybe<String> none = new Maybe<String>(null);
+  private static final Maybe<String> unknown = new Maybe<>();
+  private static final Maybe<String> none = new Maybe<>(null);
 
   @Nullable
   private static Maybe<String> readOne(StubInputStream stream) throws IOException {
@@ -91,7 +91,7 @@ public class PropertyStubStorage extends PropertyBunch<String> implements Custom
     else {
       String s = ref.getString();
       if (IMPOSSIBLE_NAME.equals(s)) return unknown;
-      else return new Maybe<String>(s);
+      else return new Maybe<>(s);
     }
   }
 
@@ -101,5 +101,4 @@ public class PropertyStubStorage extends PropertyBunch<String> implements Custom
     boolean success = fillFromCall(expr, prop);
     return success? prop : null;
   }
-
 }

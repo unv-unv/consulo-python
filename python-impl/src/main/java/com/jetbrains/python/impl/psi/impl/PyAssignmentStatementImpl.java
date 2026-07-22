@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import consulo.annotation.access.RequiredReadAction;
 import org.jspecify.annotations.Nullable;
 import com.google.common.collect.Lists;
 import com.jetbrains.python.impl.psi.PyUtil;
@@ -53,7 +54,9 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 		pyVisitor.visitPyAssignmentStatement(this);
 	}
 
-	public PyExpression[] getTargets()
+	@Override
+    @RequiredReadAction
+    public PyExpression[] getTargets()
 	{
 		if(myTargets == null)
 		{
@@ -63,12 +66,14 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 	}
 
 	@Override
+    @RequiredReadAction
 	public PyExpression[] getRawTargets()
 	{
 		return calcTargets(true);
 	}
 
-	private PyExpression[] calcTargets(boolean raw)
+	@RequiredReadAction
+    private PyExpression[] calcTargets(boolean raw)
 	{
 		ASTNode[] eqSigns = getNode().getChildren(TokenSet.create(PyTokenTypes.EQ));
 		if(eqSigns.length == 0)
@@ -111,6 +116,7 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 
 	@Nullable
 	@Override
+    @RequiredReadAction
 	public PyAnnotation getAnnotation()
 	{
 		return findChildByClass(PyAnnotation.class);
@@ -148,6 +154,8 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 	 * @return rightmost expression in statement, which is supposedly the assigned value, or null.
 	 */
 	@Nullable
+    @Override
+    @RequiredReadAction
 	public PyExpression getAssignedValue()
 	{
 		PsiElement child = getLastChild();
@@ -162,7 +170,9 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 		return (PyExpression) child;
 	}
 
-	public List<Pair<PyExpression, PyExpression>> getTargetsToValuesMapping()
+	@Override
+    @RequiredReadAction
+    public List<Pair<PyExpression, PyExpression>> getTargetsToValuesMapping()
 	{
 		List<Pair<PyExpression, PyExpression>> ret = new SmartList<>();
 		if(!PsiTreeUtil.hasErrorElements(this))
@@ -186,6 +196,8 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 	}
 
 	@Nullable
+    @Override
+    @RequiredReadAction
 	public PyExpression getLeftHandSideExpression()
 	{
 		PsiElement child = getFirstChild();
@@ -201,6 +213,7 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 	}
 
 	@Override
+    @RequiredReadAction
 	public boolean isAssignmentTo(String name)
 	{
 		PyExpression lhs = getLeftHandSideExpression();
@@ -275,7 +288,8 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 		}
 	}
 
-	public List<PsiNamedElement> getNamedElements()
+	@Override
+    public List<PsiNamedElement> getNamedElements()
 	{
 		List<PyExpression> expressions = PyUtil.flattenedParensAndStars(getTargets());
 		List<PsiNamedElement> result = new ArrayList<>();
@@ -295,6 +309,7 @@ public class PyAssignmentStatementImpl extends PyElementImpl implements PyAssign
 	}
 
 	@Nullable
+    @RequiredReadAction
 	public PsiNamedElement getNamedElement(String the_name)
 	{
 		// performance: check simple case first

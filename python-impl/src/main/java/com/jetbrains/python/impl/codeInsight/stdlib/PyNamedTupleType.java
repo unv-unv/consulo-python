@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import consulo.annotation.access.RequiredReadAction;
 import org.jspecify.annotations.Nullable;
 import consulo.language.editor.completion.lookup.LookupElementBuilder;
 import consulo.language.psi.PsiElement;
@@ -95,6 +96,7 @@ public class PyNamedTupleType extends PyClassTypeImpl implements PyCallableType
 	}
 
 	@Override
+    @RequiredReadAction
 	public String getName()
 	{
 		return myName;
@@ -130,6 +132,7 @@ public class PyNamedTupleType extends PyClassTypeImpl implements PyCallableType
 	}
 
 	@Override
+    @RequiredReadAction
 	public Set<String> getMemberNames(boolean inherited, TypeEvalContext context)
 	{
 		Set<String> result = super.getMemberNames(inherited, context);

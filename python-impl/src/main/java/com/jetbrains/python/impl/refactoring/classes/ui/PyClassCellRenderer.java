@@ -17,6 +17,7 @@ package com.jetbrains.python.impl.refactoring.classes.ui;
 
 import java.awt.Component;
 
+import consulo.annotation.access.RequiredReadAction;
 import org.jspecify.annotations.Nullable;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
@@ -47,14 +48,17 @@ public class PyClassCellRenderer extends DefaultListCellRenderer
 		myShowReadOnly = showReadOnly;
 	}
 
-	public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+	@Override
+    @RequiredReadAction
+    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
 	{
 		super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
 		return customizeRenderer(value, myShowReadOnly);
 	}
 
-	public JLabel customizeRenderer(Object value, boolean showReadOnly)
+	@RequiredReadAction
+    public JLabel customizeRenderer(Object value, boolean showReadOnly)
 	{
 		PyClass aClass = (PyClass) value;
 		setText(getClassText(aClass));
@@ -73,6 +77,7 @@ public class PyClassCellRenderer extends DefaultListCellRenderer
 	}
 
 	@Nullable
+    @RequiredReadAction
 	public static String getClassText(PyClass aClass)
 	{
 		return aClass.getName();

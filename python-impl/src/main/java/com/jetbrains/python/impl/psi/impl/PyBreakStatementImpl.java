@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.psi.impl;
-
 
 import consulo.language.ast.ASTNode;
 import consulo.language.psi.PsiElement;
@@ -28,30 +26,27 @@ import org.jspecify.annotations.Nullable;
  * @author yole
  */
 public class PyBreakStatementImpl extends PyElementImpl implements PyBreakStatement {
-  public PyBreakStatementImpl(ASTNode astNode) {
-    super(astNode);
-  }
-
-  @Override
-  protected void acceptPyVisitor(PyElementVisitor pyVisitor) {
-    pyVisitor.visitPyBreakStatement(this);
-  }
-
-  @Nullable
-  public PyLoopStatement getLoopStatement() {
-    return getLoopStatement(this);
-  }
-
-  @Nullable
-  private static PyLoopStatement getLoopStatement(PsiElement element) {
-    PyLoopStatement loop = PsiTreeUtil.getParentOfType(element, PyLoopStatement.class);
-    if (loop instanceof PyStatementWithElse) {
-      PyStatementWithElse stmt = (PyStatementWithElse)loop;
-      PyElsePart elsePart = stmt.getElsePart();
-      if (PsiTreeUtil.isAncestor(elsePart, element, true)) {
-        return getLoopStatement(loop);
-      }
+    public PyBreakStatementImpl(ASTNode astNode) {
+        super(astNode);
     }
-    return loop;
-  }
+
+    @Override
+    protected void acceptPyVisitor(PyElementVisitor pyVisitor) {
+        pyVisitor.visitPyBreakStatement(this);
+    }
+
+    @Nullable
+    @Override
+    public PyLoopStatement getLoopStatement() {
+        return getLoopStatement(this);
+    }
+
+    @Nullable
+    private static PyLoopStatement getLoopStatement(PsiElement element) {
+        PyLoopStatement loop = PsiTreeUtil.getParentOfType(element, PyLoopStatement.class);
+        if (loop instanceof PyStatementWithElse stmt && PsiTreeUtil.isAncestor(stmt.getElsePart(), element, true)) {
+            return getLoopStatement(loop);
+        }
+        return loop;
+    }
 }

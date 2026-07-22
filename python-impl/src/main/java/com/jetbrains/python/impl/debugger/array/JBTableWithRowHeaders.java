@@ -65,16 +65,15 @@ public class JBTableWithRowHeaders extends JBTable
 		return myScrollPane;
 	}
 
-	public boolean getScrollableTracksViewportWidth()
+	@Override
+    public boolean getScrollableTracksViewportWidth()
 	{
 		return getPreferredSize().width < getParent().getWidth();
 	}
 
-
 	@Override
 	public void setModel(TableModel model)
 	{
-
 		super.setModel(model);
 		if(model instanceof AsyncArrayTableModel)
 		{
@@ -110,7 +109,6 @@ public class JBTableWithRowHeaders extends JBTable
 			super.paintComponent(g);
 		}
 
-
 		@Override
 		public void setModel(TableModel model)
 		{
@@ -135,15 +133,14 @@ public class JBTableWithRowHeaders extends JBTable
 			return super.getRowHeight(row);
 		}
 
-
 		@Override
 		public boolean isCellEditable(int row, int column)
 		{
 			return false;
 		}
 
-
-		public void propertyChange(PropertyChangeEvent e)
+		@Override
+        public void propertyChange(PropertyChangeEvent e)
 		{
 			if("selectionModel".equals(e.getPropertyName()))
 			{
@@ -169,7 +166,8 @@ public class JBTableWithRowHeaders extends JBTable
 				setHorizontalAlignment(SwingConstants.CENTER);
 			}
 
-			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+			@Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 			{
 				if(table != null)
 				{
@@ -198,7 +196,6 @@ public class JBTableWithRowHeaders extends JBTable
 
 	public static class CustomTableHeader extends JTableHeader
 	{
-
 		public CustomTableHeader(JTable table)
 		{
 			super();
@@ -230,7 +227,6 @@ public class JBTableWithRowHeaders extends JBTable
 
 	public static class DefaultTableHeaderCellRenderer extends DefaultTableCellRenderer
 	{
-
 		public DefaultTableHeaderCellRenderer()
 		{
 			setHorizontalAlignment(CENTER);

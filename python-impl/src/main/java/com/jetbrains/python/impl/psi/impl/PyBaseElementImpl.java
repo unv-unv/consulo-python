@@ -24,6 +24,7 @@ import com.jetbrains.python.psi.PyReferenceOwner;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.document.util.TextRange;
 import consulo.language.ast.ASTNode;
 import consulo.language.ast.IElementType;
@@ -55,6 +56,7 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 	}
 
 	@Override
+    @RequiredReadAction
 	public PythonLanguage getLanguage()
 	{
 		return (PythonLanguage) PythonFileType.INSTANCE.getLanguage();
@@ -73,6 +75,7 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 		return className;
 	}
 
+    @Override
 	public void accept(PsiElementVisitor visitor)
 	{
 		PyUtil.verboseOnly(() -> PyPsiUtils.assertValid(this));
@@ -91,13 +94,15 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 		pyVisitor.visitPyElement(this);
 	}
 
-	protected <T extends PyElement> T[] childrenToPsi(TokenSet filterSet, T[] array)
+	@RequiredReadAction
+    protected <T extends PyElement> T[] childrenToPsi(TokenSet filterSet, T[] array)
 	{
 		ASTNode[] nodes = getNode().getChildren(filterSet);
 		return PyPsiUtils.nodesToPsi(nodes, array);
 	}
 
 	@Nullable
+    @RequiredReadAction
 	protected <T extends PyElement> T childToPsi(TokenSet filterSet, int index)
 	{
 		ASTNode[] nodes = getNode().getChildren(filterSet);
@@ -110,6 +115,7 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 	}
 
 	@Nullable
+    @RequiredReadAction
 	protected <T extends PyElement> T childToPsi(IElementType elType)
 	{
 		ASTNode node = getNode().findChildByType(elType);
@@ -123,6 +129,7 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 	}
 
 	@Nullable
+    @RequiredReadAction
 	protected <T extends PyElement> T childToPsi(TokenSet elTypes)
 	{
 		ASTNode node = getNode().findChildByType(elTypes);
@@ -130,7 +137,8 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 		return node != null ? (T) node.getPsi() : null;
 	}
 
-	protected <T extends PyElement> T childToPsiNotNull(TokenSet filterSet, int index)
+	@RequiredReadAction
+    protected <T extends PyElement> T childToPsiNotNull(TokenSet filterSet, int index)
 	{
 		PyElement child = childToPsi(filterSet, index);
 		if(child == null)
@@ -141,7 +149,8 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 		return (T) child;
 	}
 
-	protected <T extends PyElement> T childToPsiNotNull(IElementType elType)
+	@RequiredReadAction
+    protected <T extends PyElement> T childToPsiNotNull(IElementType elType)
 	{
 		PyElement child = childToPsi(elType);
 		if(child == null)
@@ -161,6 +170,7 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 	 * @return the reference or null.
 	 */
 	@Override
+    @RequiredReadAction
 	public PsiReference findReferenceAt(int offset)
 	{
 		// copy/paste from SharedPsiElementImplUtil
@@ -197,6 +207,7 @@ public class PyBaseElementImpl<T extends StubElement> extends StubBasedPsiElemen
 		return new PsiMultiReference(referencesList.toArray(new PsiReference[referencesList.size()]), referencesList.get(referencesList.size() - 1).getElement());
 	}
 
+    @RequiredReadAction
 	private static void addReferences(int offset, PsiElement element, Collection<PsiReference> outReferences, PyResolveContext resolveContext)
 	{
 		PsiReference[] references;
