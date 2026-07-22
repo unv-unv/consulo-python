@@ -18,6 +18,7 @@ package com.jetbrains.python.impl.inspections.quickfix;
 import com.jetbrains.python.impl.inspections.PyEncodingUtil;
 import com.jetbrains.python.psi.LanguageLevel;
 import com.jetbrains.python.psi.PyElementGenerator;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiComment;
@@ -48,6 +49,8 @@ public class AddEncodingQuickFix implements LocalQuickFix {
         return PyLocalize.qfixAddEncoding();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiFile file = descriptor.getPsiElement().getContainingFile();
         if (file == null) {
@@ -57,7 +60,9 @@ public class AddEncodingQuickFix implements LocalQuickFix {
         if (firstLine instanceof PsiComment && firstLine.getText().startsWith("#!")) {
             firstLine = firstLine.getNextSibling();
         }
-        PsiComment encodingLine = PyElementGenerator.getInstance(project).createFromText(LanguageLevel.forElement(file), PsiComment.class,
+        PsiComment encodingLine = PyElementGenerator.getInstance(project).createFromText(
+            LanguageLevel.forElement(file),
+            PsiComment.class,
             String.format(PyEncodingUtil.ENCODING_FORMAT_PATTERN[myEncodingFormatIndex], myDefaultEncoding)
         );
         file.addBefore(encodingLine, firstLine);

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.buildout.config;
 
 import com.google.common.collect.Maps;
@@ -27,13 +26,12 @@ import com.jetbrains.python.impl.buildout.config.lexer.BuildoutCfgFlexLexer;
 import java.util.Map;
 
 /**
- * @author: traff
+ * @author traff
  */
 public class BuildoutCfgSyntaxHighlighter extends SyntaxHighlighterBase implements BuildoutCfgTokenTypes {
   static final String COMMENT_ID = "BUILDOUT_COMMENT";
   static final String TEXT_ID = "BUILDOUT_TEXT";
   static final String BRACKETS_ID = "BUILDOUT_BRACKETS";
-
 
   public static final TextAttributesKey BUILDOUT_SECTION_NAME = TextAttributesKey.createTextAttributesKey(
     "BUILDOUT.SECTION_NAME",
@@ -79,11 +77,12 @@ public class BuildoutCfgSyntaxHighlighter extends SyntaxHighlighterBase implemen
     ATTRIBUTES.put(VALUE_CHARACTERS, BUILDOUT_VALUE);
   }
 
-
+  @Override
   public TextAttributesKey[] getTokenHighlights(IElementType tokenType) {
     return SyntaxHighlighterBase.pack(ATTRIBUTES.get(tokenType));
   }
 
+  @Override
   public Lexer getHighlightingLexer() {
     return new BuildoutCfgFlexLexer();
   }

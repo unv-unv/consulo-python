@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.validation;
 
-import consulo.virtualFileSystem.VirtualFile;
-import com.jetbrains.python.impl.PyBundle;
 import com.jetbrains.python.PyNames;
-import com.jetbrains.python.psi.*;
 import com.jetbrains.python.impl.sdk.PythonSdkType;
+import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.localize.LocalizeValue;
+import consulo.python.impl.localize.PyLocalize;
+import consulo.virtualFileSystem.VirtualFile;
 
 /**
  * @author yole
@@ -76,65 +77,72 @@ public class AssignTargetAnnotator extends PyAnnotator {
 
   private class ExprVisitor extends PyElementVisitor {
     private final Operation myOp;
-    private final String DELETING_NONE = PyBundle.message("ANN.deleting.none");
-    private final String ASSIGNMENT_TO_NONE = PyBundle.message("ANN.assign.to.none");
-    private final String CANT_ASSIGN_TO_FUNCTION_CALL = PyBundle.message("ANN.cant.assign.to.call");
-    private final String CANT_DELETE_FUNCTION_CALL = PyBundle.message("ANN.cant.delete.call");
 
     public ExprVisitor(Operation op) {
       myOp = op;
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyReferenceExpression(PyReferenceExpression node) {
       String referencedName = node.getReferencedName();
       if (PyNames.NONE.equals(referencedName)) {
-        getHolder().createErrorAnnotation(node, (myOp == Operation.Delete) ? DELETING_NONE : ASSIGNMENT_TO_NONE);
+        getHolder().newError(myOp == Operation.Delete ? PyLocalize.annDeletingNone() : PyLocalize.annAssignToNone()).range(node).create();
       }
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyTargetExpression(PyTargetExpression node) {
       String targetName = node.getName();
       if (PyNames.NONE.equals(targetName)) {
-        VirtualFile vfile = node.getContainingFile().getVirtualFile();
-        if (vfile != null && !vfile.getUrl().contains("/" + PythonSdkType.SKELETON_DIR_NAME + "/")){
-          getHolder().createErrorAnnotation(node, (myOp == Operation.Delete) ? DELETING_NONE : ASSIGNMENT_TO_NONE);
+        VirtualFile vFile = node.getContainingFile().getVirtualFile();
+        if (vFile != null && !vFile.getUrl().contains("/" + PythonSdkType.SKELETON_DIR_NAME + "/")){
+          getHolder().newError(myOp == Operation.Delete ? PyLocalize.annDeletingNone() : PyLocalize.annAssignToNone()).range(node).create();
         }
       }
       if (PyNames.DEBUG.equals(targetName)) {
         if (LanguageLevel.forElement(node).isPy3K()) {
-          getHolder().createErrorAnnotation(node, "assignment to keyword");
+          getHolder().newError(LocalizeValue.localizeTODO("assignment to keyword")).range(node).create();
         }
         else {
-          getHolder().createErrorAnnotation(node, "cannot assign to __debug__");
+          getHolder().newError(LocalizeValue.localizeTODO("cannot assign to __debug__")).range(node).create();
         }
       }
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyCallExpression(PyCallExpression node) {
-      getHolder().createErrorAnnotation(node, (myOp == Operation.Delete) ? CANT_DELETE_FUNCTION_CALL : CANT_ASSIGN_TO_FUNCTION_CALL);
+      getHolder()
+          .newError(myOp == Operation.Delete ? PyLocalize.annCantDeleteCall() : PyLocalize.annCantAssignToCall())
+          .range(node)
+          .create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyGeneratorExpression(PyGeneratorExpression node) {
-      getHolder().createErrorAnnotation(node, PyBundle.message(
-        myOp == Operation.AugAssign ? "ANN.cant.aug.assign.to.generator" : "ANN.cant.assign.to.generator"));
+      getHolder()
+          .newError(myOp == Operation.AugAssign ? PyLocalize.annCantAugAssignToGenerator() : PyLocalize.annCantAssignToGenerator())
+          .range(node)
+          .create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyBinaryExpression(PyBinaryExpression node) {
-      getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.assign.to.operator"));
+      getHolder().newError(PyLocalize.annCantAssignToOperator()).range(node).create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyTupleExpression(PyTupleExpression node) {
       if (node.getElements().length == 0) {
-        getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.assign.to.parens"));
+        getHolder().newError(PyLocalize.annCantAssignToParens()).range(node).create();
       }
       else if (myOp == Operation.AugAssign) {
-        getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.aug.assign.to.tuple.or.generator"));
+        getHolder().newError(PyLocalize.annCantAugAssignToTupleOrGenerator()).range(node).create();
       }
       else {
         node.acceptChildren(this);
@@ -142,9 +150,10 @@ public class AssignTargetAnnotator extends PyAnnotator {
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyParenthesizedExpression(PyParenthesizedExpression node) {
       if (myOp == Operation.AugAssign) {
-        getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.aug.assign.to.tuple.or.generator"));
+        getHolder().newError(PyLocalize.annCantAugAssignToTupleOrGenerator()).range(node).create();
       }
       else {
         node.acceptChildren(this);
@@ -152,12 +161,13 @@ public class AssignTargetAnnotator extends PyAnnotator {
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyListLiteralExpression(PyListLiteralExpression node) {
       if (node.getElements().length == 0) {
-        getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.assign.to.brackets"));
+        getHolder().newError(PyLocalize.annCantAssignToBrackets()).range(node).create();
       }
       else if (myOp == Operation.AugAssign) {
-        getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.aug.assign.to.list.or.comprh"));
+        getHolder().newError(PyLocalize.annCantAugAssignToListOrComprh()).range(node).create();
       }
       else {
         node.acceptChildren(this);
@@ -165,62 +175,88 @@ public class AssignTargetAnnotator extends PyAnnotator {
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyListCompExpression(PyListCompExpression node) {
-      markError(node, PyBundle.message(myOp == Operation.AugAssign ? "ANN.cant.aug.assign.to.comprh" : "ANN.cant.assign.to.comprh"));
+        getHolder()
+            .newError(myOp == Operation.AugAssign ? PyLocalize.annCantAugAssignToComprh() : PyLocalize.annCantAssignToComprh())
+            .range(node)
+            .create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyDictCompExpression(PyDictCompExpression node) {
-      markError(node, PyBundle.message(myOp == Operation.AugAssign ? "ANN.cant.aug.assign.to.dict.comprh" : "ANN.cant.assign.to.dict.comprh"));
+        getHolder()
+            .newError(myOp == Operation.AugAssign ? PyLocalize.annCantAugAssignToDictComprh() : PyLocalize.annCantAssignToDictComprh())
+            .range(node)
+            .create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPySetCompExpression(PySetCompExpression node) {
-      markError(node, PyBundle.message(myOp == Operation.AugAssign ? "ANN.cant.aug.assign.to.set.comprh" : "ANN.cant.assign.to.set.comprh"));
+        getHolder()
+            .newError(myOp == Operation.AugAssign ? PyLocalize.annCantAugAssignToSetComprh() : PyLocalize.annCantAssignToSetComprh())
+            .range(node)
+            .create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyStarExpression(PyStarExpression node) {
       super.visitPyStarExpression(node);
       if (!(node.getParent() instanceof PySequenceExpression)) {
-        markError(node, "starred assignment target must be in a list or tuple");
+        getHolder().newError(LocalizeValue.localizeTODO("starred assignment target must be in a list or tuple")).range(node).create();
       }
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyDictLiteralExpression(PyDictLiteralExpression node) {
       checkLiteral(node);
     }
 
     @Override
+    @RequiredReadAction
     public void visitPySetLiteralExpression(PySetLiteralExpression node) {
       checkLiteral(node);
     }
 
+    @Override
+    @RequiredReadAction
     public void visitPyNumericLiteralExpression(PyNumericLiteralExpression node) {
       checkLiteral(node);
     }
 
+    @Override
+    @RequiredReadAction
     public void visitPyStringLiteralExpression(PyStringLiteralExpression node) {
       checkLiteral(node);
     }
 
+    @RequiredReadAction
     private void checkLiteral(PyExpression node) {
-      getHolder().createErrorAnnotation(node, PyBundle.message(myOp == Operation.Delete? "ANN.cant.delete.literal" : "ANN.cant.assign.to.literal"));
+      getHolder().newError(myOp == Operation.Delete ? PyLocalize.annCantDeleteLiteral() : PyLocalize.annCantAssignToLiteral())
+        .range(node)
+        .create();
     }
 
+    @Override
+    @RequiredReadAction
     public void visitPyLambdaExpression(PyLambdaExpression node) {
-      getHolder().createErrorAnnotation(node, PyBundle.message("ANN.cant.assign.to.lambda"));
+      getHolder().newError(PyLocalize.annCantAssignToLambda()).range(node).create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyNoneLiteralExpression(PyNoneLiteralExpression node) {
-      getHolder().createErrorAnnotation(node, "assignment to keyword");
+      getHolder().newError(LocalizeValue.localizeTODO("assignment to keyword")).range(node).create();
     }
 
     @Override
+    @RequiredReadAction
     public void visitPyBoolLiteralExpression(PyBoolLiteralExpression node) {
-      getHolder().createErrorAnnotation(node, "assignment to keyword");
+      getHolder().newError(LocalizeValue.localizeTODO("assignment to keyword")).range(node).create();
     }
   }
 }

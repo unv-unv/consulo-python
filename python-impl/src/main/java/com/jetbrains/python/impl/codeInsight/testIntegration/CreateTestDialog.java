@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.codeInsight.testIntegration;
 
-import consulo.fileChooser.FileChooserDescriptorFactory;
 import consulo.application.HelpManager;
+import consulo.fileChooser.FileChooserDescriptorFactory;
 import consulo.project.Project;
+import consulo.ui.ex.awt.BooleanTableCellRenderer;
 import consulo.ui.ex.awt.DialogWrapper;
 import consulo.ui.ex.awt.TextFieldWithBrowseButton;
 import consulo.util.lang.StringUtil;
-import consulo.ui.ex.awt.BooleanTableCellRenderer;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -30,13 +29,11 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * User: catherine
+ * @author catherine
  */
 public class CreateTestDialog extends DialogWrapper {
   private TextFieldWithBrowseButton myTargetDir;
@@ -54,18 +51,12 @@ public class CreateTestDialog extends DialogWrapper {
     myTargetDir.setEditable(false);
 
 
-    myTargetDir.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent actionEvent) {
-        getOKAction().setEnabled(isValid());
-      }
-    });
+    myTargetDir.addActionListener(actionEvent -> getOKAction().setEnabled(isValid()));
 
     setTitle("Create test");
 
     addUpdater(myFileName);
     addUpdater(myClassName);
-
   }
 
   public void methodsSize(int methods) {
@@ -88,14 +79,17 @@ public class CreateTestDialog extends DialogWrapper {
       field.getDocument().addDocumentListener(new MyDocumentListener());
   }
   private class MyDocumentListener implements DocumentListener {
+    @Override
     public void insertUpdate(DocumentEvent documentEvent) {
       getOKAction().setEnabled(isValid());
     }
 
+    @Override
     public void removeUpdate(DocumentEvent documentEvent) {
       getOKAction().setEnabled(isValid());
     }
 
+    @Override
     public void changedUpdate(DocumentEvent documentEvent) {
       getOKAction().setEnabled(isValid());
     }
@@ -141,20 +135,22 @@ public class CreateTestDialog extends DialogWrapper {
   }
 
   public List<String> getMethods() {
-    List<String> res = new ArrayList<String>();
+    List<String> res = new ArrayList<>();
 
     for (int i = 0; i != myTableModel.getRowCount(); ++i) {
       Object val = myTableModel.getValueAt(i, 0);
-      if (val != null && (Boolean)val == true)
+      if (val != null && (Boolean) val)
         res.add((String)myTableModel.getValueAt(i, 1));
     }
     return res;
   }
 
+  @Override
   protected Action[] createActions() {
     return new Action[]{getOKAction(), getCancelAction(), getHelpAction()};
   }
 
+  @Override
   protected void doHelpAction() {
     HelpManager.getInstance().invokeHelp("reference.dialogs.createTestsFromGoTo");
   }

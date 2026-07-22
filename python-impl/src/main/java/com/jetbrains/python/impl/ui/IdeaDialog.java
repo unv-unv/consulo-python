@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.ui;
 
 import consulo.project.Project;
@@ -28,7 +27,7 @@ import java.awt.event.ActionListener;
 
 /**
  * @author Alexei Orischenko
- *         Date: Nov 30, 2009
+ * @since 2009-11-30
  */
 public abstract class IdeaDialog extends DialogWrapper {
 
@@ -45,14 +44,17 @@ public abstract class IdeaDialog extends DialogWrapper {
   }
 
   private class MyDocumentListener implements DocumentListener {
+    @Override
     public void insertUpdate(DocumentEvent documentEvent) {
       updateOkButton();
     }
 
+    @Override
     public void removeUpdate(DocumentEvent documentEvent) {
       updateOkButton();
     }
 
+    @Override
     public void changedUpdate(DocumentEvent documentEvent) {
       updateOkButton();
     }
@@ -63,10 +65,6 @@ public abstract class IdeaDialog extends DialogWrapper {
   }
 
   protected void addUpdater(JToggleButton check) {
-    check.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent actionEvent) {
-        updateOkButton();
-      }
-    });
+    check.addActionListener(actionEvent -> updateOkButton());
   }
 }

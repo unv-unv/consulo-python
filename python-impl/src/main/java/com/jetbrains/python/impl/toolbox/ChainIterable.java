@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.toolbox;
 
 import org.jspecify.annotations.Nullable;
@@ -23,8 +22,8 @@ import java.util.Iterator;
 
 /**
  * Iterable that splices other iterables and iterates over them sequentially.
- * User: dcheryasov
- * Date: Nov 20, 2009 8:01:23 AM
+ * @author dcheryasov
+ * @since 2009-11-20
  */
 public class ChainIterable<T> extends ChainedListBase<Iterable<T>> implements Iterable<T> {
 
@@ -40,7 +39,7 @@ public class ChainIterable<T> extends ChainedListBase<Iterable<T>> implements It
     super(Collections.singleton(initial));
   }
 
-
+  @Override
   public ChainIterable<T> add(Iterable<T> another) {
     return (ChainIterable<T>)super.add(another);
   }
@@ -71,8 +70,6 @@ public class ChainIterable<T> extends ChainedListBase<Iterable<T>> implements It
   }
 
   public Iterator<T> iterator() {
-
-
     class IterMixedIn extends ChainIterationMixin<T, Iterable<T>> {
       IterMixedIn(ChainedListBase<Iterable<T>> link) {
         super(link);
@@ -85,35 +82,34 @@ public class ChainIterable<T> extends ChainedListBase<Iterable<T>> implements It
     }
     final IterMixedIn mixin = new IterMixedIn(this);
 
-
     class Iter extends ChainedListBase<Iterable<T>> implements Iterator<T> {
-
       Iter(ChainedListBase<Iterable<T>> piggybacked) {
         super(piggybacked.myPayload);
         myNext = piggybacked.myNext;
       }
 
+      @Override
       public boolean hasNext() {
         return mixin.hasNext();
       }
 
+      @Override
       public void remove() {
         throw new UnsupportedOperationException(); // we don't remove things
       }
 
+      @Override
       public T next() {
         //noinspection RedundantCast
         return (T)mixin.next();
       }
-
     }
 
     return new Iter(this);
-
   }
 
   @Override
   public String toString() {
-    return FP.fold(new FP.StringCollector<T>(), this, new StringBuilder()).toString();
+    return FP.fold(new FP.StringCollector<>(), this, new StringBuilder()).toString();
   }
 }

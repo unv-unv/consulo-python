@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.buildout.config;
 
 import com.jetbrains.python.impl.buildout.config.lexer.BuildoutCfgFlexLexer;
@@ -46,35 +45,43 @@ public class BuildoutCfgParserDefinition implements ParserDefinition, BuildoutCf
     return BuildoutCfgLanguage.INSTANCE;
   }
 
+  @Override
   public Lexer createLexer(LanguageVersion languageVersion) {
     return new BuildoutCfgFlexLexer();
   }
 
   @Nullable
+  @Override
   public PsiParser createParser(LanguageVersion languageVersion) {
     return new BuildoutCfgParser();
   }
 
+  @Override
   public IFileElementType getFileNodeType() {
     return FILE;
   }
 
+  @Override
   public TokenSet getWhitespaceTokens(LanguageVersion languageVersion) {
     return TokenSet.create(WHITESPACE);
   }
 
+  @Override
   public TokenSet getCommentTokens(LanguageVersion languageVersion) {
     return TokenSet.create(COMMENT);
   }
 
+  @Override
   public TokenSet getStringLiteralElements(LanguageVersion languageVersion) {
     return TokenSet.create(TEXT);
   }
 
+  @Override
   public PsiElement createElement(ASTNode node) {
     return astFactory.create(node);
   }
 
+  @Override
   public PsiFile createFile(FileViewProvider viewProvider) {
     return new BuildoutCfgFile(viewProvider);
   }

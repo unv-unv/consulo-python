@@ -17,6 +17,7 @@ package com.jetbrains.python.impl.inspections.quickfix;
 
 import com.jetbrains.python.impl.psi.impl.PyAugAssignmentStatementImpl;
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiComment;
@@ -40,12 +41,12 @@ public class AugmentedAssignmentQuickFix implements LocalQuickFix {
         return PyLocalize.qfixAugmentAssignment();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiElement element = descriptor.getPsiElement();
 
-        if (element instanceof PyAssignmentStatement && element.isWritable()) {
-            PyAssignmentStatement statement = (PyAssignmentStatement) element;
-
+        if (element instanceof PyAssignmentStatement statement && element.isWritable()) {
             PyExpression target = statement.getLeftHandSideExpression();
             PyBinaryExpression expression = (PyBinaryExpression) statement.getAssignedValue();
             if (expression == null) {
@@ -53,8 +54,8 @@ public class AugmentedAssignmentQuickFix implements LocalQuickFix {
             }
             PyExpression leftExpression = expression.getLeftExpression();
             PyExpression rightExpression = expression.getRightExpression();
-            if (rightExpression instanceof PyParenthesizedExpression) {
-                rightExpression = ((PyParenthesizedExpression) rightExpression).getContainedExpression();
+            if (rightExpression instanceof PyParenthesizedExpression parenthesizedExpr) {
+                rightExpression = parenthesizedExpr.getContainedExpression();
             }
             if (target != null && rightExpression != null) {
                 String targetText = target.getText();
@@ -74,12 +75,13 @@ public class AugmentedAssignmentQuickFix implements LocalQuickFix {
                         if (psiOperator == null) {
                             return;
                         }
-                        stringBuilder.append(targetText).append(" ").
-                            append(psiOperator.getText()).append("= ").append(rightExpression.getText());
-                        PyAugAssignmentStatementImpl augAssignment =
-                            elementGenerator.createFromText(LanguageLevel.forElement(element),
-                                PyAugAssignmentStatementImpl.class, stringBuilder.toString()
-                            );
+                        stringBuilder.append(targetText).append(" ")
+                            .append(psiOperator.getText()).append("= ").append(rightExpression.getText());
+                        PyAugAssignmentStatementImpl augAssignment = elementGenerator.createFromText(
+                            LanguageLevel.forElement(element),
+                            PyAugAssignmentStatementImpl.class,
+                            stringBuilder.toString()
+                        );
                         for (PsiComment comment : comments)
                             augAssignment.add(comment);
                         statement.replace(augAssignment);
@@ -88,5 +90,4 @@ public class AugmentedAssignmentQuickFix implements LocalQuickFix {
             }
         }
     }
-
 }

@@ -20,9 +20,9 @@ import com.jetbrains.python.psi.PyBinaryExpression;
 import com.jetbrains.python.psi.PyElementGenerator;
 import com.jetbrains.python.psi.PyElementType;
 import com.jetbrains.python.psi.PyExpression;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
-import consulo.language.psi.PsiElement;
 import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
@@ -37,10 +37,10 @@ public class ComparisonWithNoneQuickFix implements LocalQuickFix {
         return PyLocalize.qfixReplaceEquality();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
-        PsiElement problemElement = descriptor.getPsiElement();
-        if (problemElement instanceof PyBinaryExpression) {
-            PyBinaryExpression binaryExpression = (PyBinaryExpression) problemElement;
+        if (descriptor.getPsiElement() instanceof PyBinaryExpression binaryExpression) {
             PyElementType operator = binaryExpression.getOperator();
             PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
             String temp;

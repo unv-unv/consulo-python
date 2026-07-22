@@ -16,16 +16,15 @@
 package com.jetbrains.python.impl.run;
 
 import com.google.common.collect.Lists;
-import com.jetbrains.python.impl.PyBundle;
 import com.jetbrains.python.impl.sdk.PythonEnvUtil;
 import com.jetbrains.python.impl.sdk.PythonSdkType;
 import com.jetbrains.python.impl.testing.PyPsiLocationWithFixedClass;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFunction;
 import com.jetbrains.python.run.AbstractPythonRunConfigurationParams;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.content.bundle.Sdk;
 import consulo.content.bundle.SdkType;
-import consulo.execution.ExecutionBundle;
 import consulo.execution.RuntimeConfigurationException;
 import consulo.execution.action.Location;
 import consulo.execution.configuration.AbstractRunConfiguration;
@@ -35,6 +34,7 @@ import consulo.execution.configuration.RuntimeConfigurationError;
 import consulo.execution.configuration.log.ui.LogConfigurationPanel;
 import consulo.execution.configuration.ui.SettingsEditor;
 import consulo.execution.configuration.ui.SettingsEditorGroup;
+import consulo.execution.localize.ExecutionLocalize;
 import consulo.execution.test.AbstractTestProxy;
 import consulo.execution.ui.awt.EnvironmentVariablesComponent;
 import consulo.ide.impl.idea.util.PathMappingSettings;
@@ -47,6 +47,7 @@ import consulo.module.content.ModuleRootManager;
 import consulo.process.cmd.GeneralCommandLine;
 import consulo.process.cmd.ParamsGroup;
 import consulo.project.Project;
+import consulo.python.impl.localize.PyLocalize;
 import consulo.python.module.extension.PyModuleExtension;
 import consulo.util.lang.StringUtil;
 import consulo.util.xml.serializer.InvalidDataException;
@@ -54,8 +55,8 @@ import consulo.util.xml.serializer.JDOMExternalizerUtil;
 import consulo.util.xml.serializer.WriteExternalException;
 import consulo.virtualFileSystem.VirtualFile;
 import org.jdom.Element;
-
 import org.jspecify.annotations.Nullable;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
@@ -86,23 +87,27 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 	 */
 	protected boolean mySkipModuleSerialization;
 
-	public AbstractPythonRunConfiguration(Project project, ConfigurationFactory factory)
+	@RequiredReadAction
+    public AbstractPythonRunConfiguration(Project project, ConfigurationFactory factory)
 	{
 		super(project, factory);
 		getConfigurationModule().init();
 	}
 
-	public List<Module> getValidModules()
+	@Override
+    public List<Module> getValidModules()
 	{
 		return getValidModules(getProject());
 	}
 
-	public PathMappingSettings getMappingSettings()
+	@Override
+    public PathMappingSettings getMappingSettings()
 	{
 		return myMappingSettings;
 	}
 
-	public void setMappingSettings(@Nullable PathMappingSettings mappingSettings)
+	@Override
+    public void setMappingSettings(@Nullable PathMappingSettings mappingSettings)
 	{
 		myMappingSettings = mappingSettings;
 	}
@@ -153,12 +158,12 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 		SettingsEditorGroup<T> group = new SettingsEditorGroup<>();
 
 		// run configuration settings tab:
-		group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), runConfigurationEditor);
+		group.addEditor(ExecutionLocalize.runConfigurationConfigurationTabTitle(), runConfigurationEditor);
 
 		// tabs provided by extensions:
 		//noinspection unchecked
 		PythonRunConfigurationExtensionsManager.getInstance().appendEditors(this, (SettingsEditorGroup) group);
-		group.addEditor(ExecutionBundle.message("logs.tab.title"), new LogConfigurationPanel<>());
+		group.addEditor(ExecutionLocalize.logsTabTitle(), new LogConfigurationPanel<>());
 
 		return group;
 	}
@@ -197,11 +202,11 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 		{
 			if(StringUtil.isEmptyOrSpaces(getSdkHome()))
 			{
-				throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_sdk"));
+				throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_sdk());
 			}
 			else if(!PythonSdkType.getInstance().isValidSdkHome(getSdkHome()))
 			{
-				throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_valid_sdk"));
+				throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_valid_sdk());
 			}
 		}
 		else
@@ -209,12 +214,13 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 			Sdk sdk = PythonSdkType.findPythonSdk(getModule());
 			if(sdk == null)
 			{
-				throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_module_sdk"));
+				throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_module_sdk());
 			}
 		}
 	}
 
-	public String getSdkHome()
+	@Override
+    public String getSdkHome()
 	{
 		String sdkHome = mySdkHome;
 		if(StringUtil.isEmptyOrSpaces(mySdkHome))
@@ -260,7 +266,8 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 		}
 	}
 
-	public void readExternal(Element element) throws InvalidDataException
+	@Override
+    public void readExternal(Element element) throws InvalidDataException
 	{
 		super.readExternal(element);
 		myInterpreterOptions = JDOMExternalizerUtil.readField(element, "INTERPRETER_OPTIONS");
@@ -292,7 +299,8 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 		EnvironmentVariablesComponent.readExternal(element, getEnvs());
 	}
 
-	public void writeExternal(Element element) throws WriteExternalException
+	@Override
+    public void writeExternal(Element element) throws WriteExternalException
 	{
 		super.writeExternal(element);
 		JDOMExternalizerUtil.writeField(element, "INTERPRETER_OPTIONS", myInterpreterOptions);
@@ -319,43 +327,51 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 		EnvironmentVariablesComponent.writeExternal(element, getEnvs());
 	}
 
-	public String getInterpreterOptions()
+	@Override
+    public String getInterpreterOptions()
 	{
 		return myInterpreterOptions;
 	}
 
-	public void setInterpreterOptions(String interpreterOptions)
+	@Override
+    public void setInterpreterOptions(String interpreterOptions)
 	{
 		myInterpreterOptions = interpreterOptions;
 	}
 
-	public String getWorkingDirectory()
+	@Override
+    public String getWorkingDirectory()
 	{
 		return myWorkingDirectory;
 	}
 
-	public void setWorkingDirectory(String workingDirectory)
+	@Override
+    public void setWorkingDirectory(String workingDirectory)
 	{
 		myWorkingDirectory = workingDirectory;
 	}
 
-	public void setSdkHome(String sdkHome)
+	@Override
+    public void setSdkHome(String sdkHome)
 	{
 		mySdkHome = sdkHome;
 	}
 
 	@Nullable
+    @Override
 	public Module getModule()
 	{
 		return getConfigurationModule().getModule();
 	}
 
-	public boolean isUseModuleSdk()
+	@Override
+    public boolean isUseModuleSdk()
 	{
 		return myUseModuleSdk;
 	}
 
-	public void setUseModuleSdk(boolean useModuleSdk)
+	@Override
+    public void setUseModuleSdk(boolean useModuleSdk)
 	{
 		myUseModuleSdk = useModuleSdk;
 	}
@@ -404,7 +420,8 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 	 *
 	 * @param commandLine what to patch
 	 */
-	public void patchCommandLine(GeneralCommandLine commandLine)
+	@Override
+    public void patchCommandLine(GeneralCommandLine commandLine)
 	{
 		String interpreterPath = getInterpreterPath();
 		Sdk sdk = getSdk();
@@ -489,7 +506,8 @@ public abstract class AbstractPythonRunConfiguration<T extends AbstractPythonRun
 	 * @param failedTest failed test
 	 * @return string spec or null if spec calculation is impossible
 	 */
-	@Nullable
+    @Nullable
+    @RequiredReadAction
 	public String getTestSpec(Location<?> location, AbstractTestProxy failedTest)
 	{
 		PsiElement element = location.getPsiElement();

@@ -26,72 +26,54 @@ import consulo.ui.ex.awt.UIUtil;
 import com.jetbrains.python.impl.debugger.containerview.ColoredCellRenderer;
 import com.jetbrains.python.impl.debugger.containerview.PyNumericViewUtil;
 
+class DataFrameTableCellRenderer extends DefaultTableCellRenderer implements ColoredCellRenderer {
+    private boolean myColored = true;
 
-class DataFrameTableCellRenderer extends DefaultTableCellRenderer implements ColoredCellRenderer
-{
+    public DataFrameTableCellRenderer() {
+        setHorizontalAlignment(CENTER);
+        setHorizontalTextPosition(LEFT);
+        setVerticalAlignment(BOTTOM);
+    }
 
+    @Override
+    public void setColored(boolean colored) {
+        myColored = colored;
+    }
 
-	private boolean myColored = true;
+    @Override
+    public boolean getColored() {
+        return myColored;
+    }
 
-	public DataFrameTableCellRenderer()
-	{
-		setHorizontalAlignment(CENTER);
-		setHorizontalTextPosition(LEFT);
-		setVerticalAlignment(BOTTOM);
-	}
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+        if (value != null) {
+            setText(value.toString());
+        }
 
-	public void setColored(boolean colored)
-	{
-		myColored = colored;
-	}
+        if (!(value instanceof TableValueDescriptor descriptor)) {
+            return this;
+        }
 
-	@Override
-	public boolean getColored()
-	{
-		return myColored;
-	}
+        if (hasFocus) {
+            this.setBorder(new LineBorder(JBColor.BLUE, 2));
+        }
 
-	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col)
-	{
-		super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
-		if(value != null)
-		{
-			setText(value.toString());
-		}
+        if (myColored) {
+            try {
+                double rangedValue = descriptor.getRangedValue();
+                if (!Double.isNaN(rangedValue)) {
+                    this.setBackground(PyNumericViewUtil.rangedValueToColor(rangedValue));
+                }
+            }
+            catch (NumberFormatException ignored) {
+            }
+        }
+        else {
+            this.setBackground(new JBColor(UIUtil.getBgFillColor(table), UIUtil.getBgFillColor(table)));
+        }
 
-		if(!(value instanceof TableValueDescriptor))
-		{
-			return this;
-		}
-
-		TableValueDescriptor descriptor = (TableValueDescriptor) value;
-
-		if(hasFocus)
-		{
-			this.setBorder(new LineBorder(JBColor.BLUE, 2));
-		}
-
-		if(myColored)
-		{
-			try
-			{
-				double rangedValue = descriptor.getRangedValue();
-				if(!Double.isNaN(rangedValue))
-				{
-					this.setBackground(PyNumericViewUtil.rangedValueToColor(rangedValue));
-				}
-			}
-			catch(NumberFormatException ignored)
-			{
-
-			}
-		}
-		else
-		{
-			this.setBackground(new JBColor(UIUtil.getBgFillColor(table), UIUtil.getBgFillColor(table)));
-		}
-
-
-		return this;
-	}
+        return this;
+    }
 }

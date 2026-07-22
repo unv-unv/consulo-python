@@ -15,13 +15,13 @@
  */
 package com.jetbrains.python.impl.testing;
 
-import com.jetbrains.python.impl.PyBundle;
 import com.jetbrains.python.codeInsight.controlflow.ScopeOwner;
+import com.jetbrains.python.impl.run.AbstractPythonRunConfiguration;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFile;
 import com.jetbrains.python.psi.PyFunction;
-import com.jetbrains.python.impl.run.AbstractPythonRunConfiguration;
 import com.jetbrains.python.run.AbstractPythonRunConfigurationParams;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.execution.RuntimeConfigurationException;
 import consulo.execution.configuration.ConfigurationFactory;
 import consulo.execution.configuration.RuntimeConfigurationError;
@@ -33,6 +33,7 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
 import consulo.language.psi.util.PsiTreeUtil;
 import consulo.project.Project;
+import consulo.python.impl.localize.PyLocalize;
 import consulo.util.io.FileUtil;
 import consulo.util.lang.Comparing;
 import consulo.util.lang.StringUtil;
@@ -42,12 +43,12 @@ import consulo.util.xml.serializer.WriteExternalException;
 import consulo.virtualFileSystem.LocalFileSystem;
 import consulo.virtualFileSystem.VirtualFile;
 import org.jdom.Element;
-
 import org.jspecify.annotations.Nullable;
+
 import java.io.File;
 
 /**
- * User: catherine
+ * @author catherine
  */
 public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonRunConfiguration implements AbstractPythonRunConfigurationParams, AbstractPythonTestRunConfigurationParams,
   RefactoringListenerProvider {
@@ -60,6 +61,7 @@ public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonR
   private String myPattern = ""; // pattern for modules in folder to match against
   private boolean usePattern = false;
 
+  @RequiredReadAction
   protected AbstractPythonTestRunConfiguration(Project project, ConfigurationFactory configurationFactory) {
     super(project, configurationFactory);
   }
@@ -118,62 +120,77 @@ public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonR
     JDOMExternalizerUtil.writeField(element, "USE_PATTERN", String.valueOf(usePattern));
   }
 
+  @Override
   public AbstractPythonRunConfigurationParams getBaseParams() {
     return this;
   }
 
+  @Override
   public String getClassName() {
     return myClassName;
   }
 
+  @Override
   public void setClassName(String className) {
     myClassName = className;
   }
 
+  @Override
   public String getFolderName() {
     return myFolderName;
   }
 
+  @Override
   public void setFolderName(String folderName) {
     myFolderName = folderName;
   }
 
+  @Override
   public String getScriptName() {
     return myScriptName;
   }
 
+  @Override
   public void setScriptName(String scriptName) {
     myScriptName = scriptName;
   }
 
+  @Override
   public String getMethodName() {
     return myMethodName;
   }
 
+  @Override
   public void setMethodName(String methodName) {
     myMethodName = methodName;
   }
 
+  @Override
   public TestType getTestType() {
     return myTestType;
   }
 
+  @Override
   public void setTestType(TestType testType) {
     myTestType = testType;
   }
 
+  @Override
   public String getPattern() {
     return myPattern;
   }
 
+  @Override
   public void setPattern(String pattern) {
     myPattern = pattern;
   }
 
+  @Override
   public boolean usePattern() {
     return usePattern;
   }
 
+  @Override
   public void usePattern(boolean usePattern) {
     this.usePattern = usePattern;
   }
@@ -191,19 +208,19 @@ public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonR
     super.checkConfiguration();
 
     if (StringUtil.isEmptyOrSpaces(myFolderName) && myTestType == TestType.TEST_FOLDER) {
-      throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_folder_name"));
+      throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_folder_name());
     }
 
     if (StringUtil.isEmptyOrSpaces(getScriptName()) && myTestType != TestType.TEST_FOLDER) {
-      throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_script_name"));
+      throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_script_name());
     }
 
     if (StringUtil.isEmptyOrSpaces(myClassName) && (myTestType == TestType.TEST_METHOD || myTestType == TestType.TEST_CLASS)) {
-      throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_class_name"));
+      throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_class_name());
     }
 
     if (StringUtil.isEmptyOrSpaces(myMethodName) && (myTestType == TestType.TEST_METHOD || myTestType == TestType.TEST_FUNCTION)) {
-      throw new RuntimeConfigurationError(PyBundle.message("runcfg.unittest.no_method_name"));
+      throw new RuntimeConfigurationError(PyLocalize.runcfgUnittestNo_method_name());
     }
   }
 
@@ -290,6 +307,7 @@ public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonR
 
   protected abstract String getPluralTitle();
 
+  @RequiredReadAction
   @Override
   public RefactoringElementListener getRefactoringElementListener(PsiElement element) {
     if (element instanceof PsiDirectory) {
@@ -343,12 +361,13 @@ public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonR
           }
         };
       }
-      if (element instanceof PyClass && (myTestType == TestType.TEST_CLASS || myTestType == TestType.TEST_METHOD) &&
-        Comparing.equal(((PyClass)element).getName(), myClassName)) {
+      if (element instanceof PyClass pyClass && (myTestType == TestType.TEST_CLASS || myTestType == TestType.TEST_METHOD) &&
+        Comparing.equal(pyClass.getName(), myClassName)) {
         return new RefactoringElementAdapter() {
           @Override
+          @RequiredReadAction
           protected void elementRenamedOrMoved(PsiElement newElement) {
-            myClassName = ((PyClass)newElement).getName();
+            myClassName = ((PyClass) newElement).getName();
           }
 
           @Override
@@ -357,13 +376,13 @@ public abstract class AbstractPythonTestRunConfiguration extends AbstractPythonR
           }
         };
       }
-      if (element instanceof PyFunction && Comparing.equal(((PyFunction)element).getName(), myMethodName)) {
-        ScopeOwner scopeOwner = PsiTreeUtil.getParentOfType(element, ScopeOwner.class);
-        if ((myTestType == TestType.TEST_FUNCTION && scopeOwner instanceof PyFile) || (myTestType == TestType.TEST_METHOD && scopeOwner instanceof PyClass && Comparing
-          .equal(scopeOwner
-                   .getName(), myClassName))) {
+      if (element instanceof PyFunction function && Comparing.equal(function.getName(), myMethodName)) {
+        ScopeOwner scopeOwner = PsiTreeUtil.getParentOfType(function, ScopeOwner.class);
+        if ((myTestType == TestType.TEST_FUNCTION && scopeOwner instanceof PyFile)
+            || (myTestType == TestType.TEST_METHOD && scopeOwner instanceof PyClass && Comparing.equal(scopeOwner.getName(), myClassName))) {
           return new RefactoringElementAdapter() {
             @Override
+            @RequiredReadAction
             protected void elementRenamedOrMoved(PsiElement newElement) {
               myMethodName = ((PyFunction)newElement).getName();
             }

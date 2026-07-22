@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.buildout.config.psi.impl;
 
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.ast.ASTNode;
 import org.jspecify.annotations.Nullable;
 
@@ -28,6 +28,8 @@ public class BuildoutCfgSectionHeader extends BuildoutCfgPsiElement {
   }
 
   @Nullable
+  @Override
+  @RequiredReadAction
   public String getName() {
     String name = getText().trim();
     if (name.startsWith("[") && name.endsWith("]")) {
@@ -37,6 +39,7 @@ public class BuildoutCfgSectionHeader extends BuildoutCfgPsiElement {
   }
 
   @Override
+  @RequiredReadAction
   public String toString() {
     return "BuildoutCfgSectionHeader:" + getNode().getElementType().toString();
   }

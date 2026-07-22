@@ -25,6 +25,8 @@ import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.types.PyClassType;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.codeEditor.Editor;
 import consulo.fileEditor.FileEditorManager;
 import consulo.language.editor.CodeInsightUtilCore;
@@ -69,6 +71,8 @@ public class AddMethodQuickFix implements LocalQuickFix {
     return PyLocalize.qfixNameAddMethod$0ToClass$1(myIdentifier, myClassName);
   }
 
+  @Override
+  @RequiredWriteAction
   public void applyFix(Project project, ProblemDescriptor descriptor) {
     try {
       // there can be no name clash, else the name would have resolved, and it hasn't.
@@ -84,28 +88,26 @@ public class AddMethodQuickFix implements LocalQuickFix {
       // try to at least match parameter count
       // TODO: get parameter style from code style
       PyFunctionBuilder builder = new PyFunctionBuilder(myIdentifier, cls);
-      PsiElement pe = problemElement.getParent();
-      String decoratorName = null; // set to non-null to add a decorator
+        String decoratorName = null; // set to non-null to add a decorator
       PyExpression[] args = PyExpression.EMPTY_ARRAY;
-      if (pe instanceof PyCallExpression) {
-        PyArgumentList arglist = ((PyCallExpression)pe).getArgumentList();
-        if (arglist == null) {
+      if (problemElement.getParent() instanceof PyCallExpression call) {
+        PyArgumentList argList = call.getArgumentList();
+        if (argList == null) {
           return;
         }
-        args = arglist.getArguments();
+        args = argList.getArguments();
       }
       boolean madeInstance = false;
       if (callByClass) {
         if (args.length > 0) {
           TypeEvalContext context = TypeEvalContext.userInitiated(cls.getProject(), cls.getContainingFile());
-          PyType firstArgType = context.getType(args[0]);
-          if (firstArgType instanceof PyClassType && ((PyClassType)firstArgType).getPyClass().isSubclass(cls, context)) {
+            if (context.getType(args[0]) instanceof PyClassType firstArgType && firstArgType.getPyClass().isSubclass(cls, context)) {
             // class, first arg ok: instance method
             builder.parameter("self"); // NOTE: might use a name other than 'self', according to code style.
             madeInstance = true;
           }
         }
-        if (!madeInstance) { // class, first arg absent or of different type: classmethod
+        if (!madeInstance) { // class, first arg absent or of different type: class-method
           builder.parameter("cls"); // NOTE: might use a name other than 'cls', according to code style.
           decoratorName = PyNames.CLASSMETHOD;
         }
@@ -119,12 +121,11 @@ public class AddMethodQuickFix implements LocalQuickFix {
           skipFirst = false;
           continue;
         }
-        if (arg instanceof PyKeywordArgument) { // foo(bar) -> def foo(self, bar_1)
-          builder.parameter(((PyKeywordArgument)arg).getKeyword());
+        if (arg instanceof PyKeywordArgument kwArg) { // foo(bar) -> def foo(self, bar_1)
+          builder.parameter(kwArg.getKeyword());
         }
-        else if (arg instanceof PyReferenceExpression) {
-          PyReferenceExpression refex = (PyReferenceExpression)arg;
-          builder.parameter(refex.getReferencedName());
+        else if (arg instanceof PyReferenceExpression refEx) {
+          builder.parameter(refEx.getReferencedName());
         }
         else { // use a boring name
           builder.parameter("param");
@@ -148,7 +149,7 @@ public class AddMethodQuickFix implements LocalQuickFix {
     }
     catch (IncorrectOperationException ignored) {
       // we failed. tell about this
-      PyUtil.showBalloon(project, PyBundle.message("QFIX.failed.to.add.method"), NotificationType.ERROR);
+      PyUtil.showBalloon(project, PyLocalize.qfixFailedToAddMethod(), NotificationType.ERROR);
     }
   }
 
@@ -165,6 +166,7 @@ public class AddMethodQuickFix implements LocalQuickFix {
     return pyClass != null ? new PyClassTypeImpl(pyClass, false) : null;
   }
 
+  @RequiredReadAction
   private static void showTemplateBuilder(PyFunction method) {
     method = CodeInsightUtilCore.forcePsiPostprocessAndRestoreElement(method);
     PsiFile file = method.getContainingFile();
@@ -173,6 +175,7 @@ public class AddMethodQuickFix implements LocalQuickFix {
     }
     final TemplateBuilder builder = TemplateBuilderFactory.getInstance().createTemplateBuilder(method);
     ParamHelper.walkDownParamArray(method.getParameterList().getParameters(), new ParamHelper.ParamVisitor() {
+      @Override
       public void visitNamedParameter(PyNamedParameter param, boolean first, boolean last) {
         builder.replaceElement(param, param.getName());
       }
@@ -185,9 +188,8 @@ public class AddMethodQuickFix implements LocalQuickFix {
     if (virtualFile == null) {
       return;
     }
-    Editor editor =
-      FileEditorManager.getInstance(file.getProject())
-                       .openTextEditor(OpenFileDescriptorFactory.getInstance(file.getProject()).builder(virtualFile).build(), true);
+    Editor editor = FileEditorManager.getInstance(file.getProject())
+      .openTextEditor(OpenFileDescriptorFactory.getInstance(file.getProject()).builder(virtualFile).build(), true);
     if (editor == null) {
       return;
     }

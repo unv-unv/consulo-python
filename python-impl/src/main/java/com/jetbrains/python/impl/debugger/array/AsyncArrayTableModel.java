@@ -84,7 +84,8 @@ public class AsyncArrayTableModel extends AbstractTableModel
 		return false;
 	}
 
-	public Object getValueAt(int row, int col)
+	@Override
+    public Object getValueAt(int row, int col)
 	{
 		Pair<Integer, Integer> key = itemToChunkKey(row, col);
 
@@ -134,17 +135,20 @@ public class AsyncArrayTableModel extends AbstractTableModel
 		return colOffset - (colOffset % CHUNK_COL_SIZE);
 	}
 
-	public int getColumnCount()
+	@Override
+    public int getColumnCount()
 	{
 		return myColumns;
 	}
 
-	public String getColumnName(int col)
+	@Override
+    public String getColumnName(int col)
 	{
 		return String.valueOf(col);
 	}
 
-	public int getRowCount()
+	@Override
+    public int getRowCount()
 	{
 		return myRows;
 	}

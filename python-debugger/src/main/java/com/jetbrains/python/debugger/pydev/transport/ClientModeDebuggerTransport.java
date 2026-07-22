@@ -303,7 +303,8 @@ public class ClientModeDebuggerTransport extends BaseDebuggerTransport
 			start(getClass().getName());
 		}
 
-		protected void onCommunicationError()
+		@Override
+        protected void onCommunicationError()
 		{
 			if(myState == State.APPROVED)
 			{

@@ -15,15 +15,16 @@
  */
 package com.jetbrains.python.impl.inspections.quickfix;
 
-import com.jetbrains.python.impl.PyBundle;
 import com.jetbrains.python.PyNames;
 import com.jetbrains.python.impl.psi.PyUtil;
+import com.jetbrains.python.impl.psi.types.PyClassTypeImpl;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.psi.types.PyClassType;
-import com.jetbrains.python.impl.psi.types.PyClassTypeImpl;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.codeEditor.Editor;
 import consulo.fileEditor.FileEditorManager;
 import consulo.language.editor.CodeInsightUtilCore;
@@ -41,8 +42,8 @@ import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
 import consulo.ui.NotificationType;
 import consulo.virtualFileSystem.VirtualFile;
-
 import org.jspecify.annotations.Nullable;
+
 import java.util.function.Function;
 
 /**
@@ -71,6 +72,7 @@ public class AddFieldQuickFix implements LocalQuickFix {
   }
 
   @Nullable
+  @RequiredWriteAction
   public static PsiElement appendToMethod(PyFunction init, Function<String, PyStatement> callback) {
     // add this field as the last stmt of the constructor
     PyStatementList statementList = init.getStatementList();
@@ -89,6 +91,8 @@ public class AddFieldQuickFix implements LocalQuickFix {
     return result;
   }
 
+  @Override
+  @RequiredWriteAction
   public void applyFix(Project project, ProblemDescriptor descriptor) {
     // expect the descriptor to point to the unresolved identifier.
     PsiElement element = descriptor.getPsiElement();
@@ -113,7 +117,7 @@ public class AddFieldQuickFix implements LocalQuickFix {
       return;
     }
     // somehow we failed. tell about this
-    PyUtil.showBalloon(project, PyBundle.message("QFIX.failed.to.add.field"), NotificationType.ERROR);
+    PyUtil.showBalloon(project, PyLocalize.qfixFailedToAddField(), NotificationType.ERROR);
   }
 
   private static PyClassType getClassType(PsiElement element) {
@@ -129,12 +133,13 @@ public class AddFieldQuickFix implements LocalQuickFix {
     return aClass != null ? new PyClassTypeImpl(aClass, false) : null;
   }
 
+  @RequiredReadAction
   private void showTemplateBuilder(PsiElement initStatement, PsiFile file) {
     initStatement = CodeInsightUtilCore.forcePsiPostprocessAndRestoreElement(initStatement);
-    if (initStatement instanceof PyAssignmentStatement) {
+    if (initStatement instanceof PyAssignmentStatement assignmentStmt) {
       TemplateBuilder builder = TemplateBuilderFactory.getInstance().createTemplateBuilder(initStatement);
-      PyExpression assignedValue = ((PyAssignmentStatement)initStatement).getAssignedValue();
-      PyExpression leftExpression = ((PyAssignmentStatement)initStatement).getLeftHandSideExpression();
+      PyExpression assignedValue = assignmentStmt.getAssignedValue();
+      PyExpression leftExpression = assignmentStmt.getLeftHandSideExpression();
       if (assignedValue != null && leftExpression != null) {
         if (replaceInitializer) {
           builder.replaceElement(assignedValue, myInitializer);
@@ -146,9 +151,8 @@ public class AddFieldQuickFix implements LocalQuickFix {
         if (virtualFile == null) {
           return;
         }
-        Editor editor =
-          FileEditorManager.getInstance(file.getProject())
-                           .openTextEditor(OpenFileDescriptorFactory.getInstance(file.getProject()).builder(virtualFile).build(), true);
+        Editor editor = FileEditorManager.getInstance(file.getProject())
+          .openTextEditor(OpenFileDescriptorFactory.getInstance(file.getProject()).builder(virtualFile).build(), true);
         if (editor == null) {
           return;
         }
@@ -158,6 +162,7 @@ public class AddFieldQuickFix implements LocalQuickFix {
   }
 
   @Nullable
+  @RequiredWriteAction
   public static PsiElement addFieldToInit(Project project, PyClass cls, String itemName, Function<String, PyStatement> callback) {
     if (cls != null && itemName != null) {
       PyFunction init = cls.findMethodByName(PyNames.INIT, false, null);
@@ -186,9 +191,11 @@ public class AddFieldQuickFix implements LocalQuickFix {
         PyStatementList clsContent = cls.getStatementList();
         newInit = (PyFunction)clsContent.addAfter(newInit, addAnchor);
 
-        PyUtil.showBalloon(project,
-                           PyBundle.message("QFIX.added.constructor.$0.for.field.$1", cls.getName(), itemName),
-                           NotificationType.INFO);
+        PyUtil.showBalloon(
+            project,
+            PyLocalize.qfixAddedConstructor$0ForField$1(cls.getName(), itemName),
+            NotificationType.INFO
+        );
         PyStatementList statementList = newInit.getStatementList();
         PyStatement[] statements = statementList.getStatements();
         return statements.length != 0 ? statements[0] : null;
@@ -198,6 +205,7 @@ public class AddFieldQuickFix implements LocalQuickFix {
   }
 
   @Nullable
+  @RequiredReadAction
   private static PyFunction createInitMethod(Project project, PyClass cls, @Nullable PyFunction ancestorInit) {
     // found it; copy its param list and make a call to it.
     if (!FileModificationService.getInstance().preparePsiElementForWrite(cls)) {
@@ -263,11 +271,13 @@ public class AddFieldQuickFix implements LocalQuickFix {
       myInitializer = initializer;
     }
 
+    @Override
     public PyStatement apply(String selfName) {
-      return PyElementGenerator.getInstance(myProject)
-                               .createFromText(LanguageLevel.getDefault(),
-                                               PyStatement.class,
-                                               selfName + "." + myItemName + " = " + myInitializer);
+      return PyElementGenerator.getInstance(myProject).createFromText(
+        LanguageLevel.getDefault(),
+        PyStatement.class,
+        selfName + "." + myItemName + " = " + myInitializer
+      );
     }
   }
 }

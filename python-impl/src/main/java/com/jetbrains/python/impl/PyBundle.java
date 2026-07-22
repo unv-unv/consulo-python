@@ -13,12 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl;
 
+import consulo.annotation.DeprecationInfo;
+import consulo.annotation.internal.MigratedExtensionsTo;
 import consulo.component.util.localize.AbstractBundle;
+import consulo.python.impl.localize.PyLocalize;
 import org.jetbrains.annotations.PropertyKey;
 
+@Deprecated
+@DeprecationInfo("Use PyLocalize")
+@MigratedExtensionsTo(PyLocalize.class)
 public class PyBundle extends AbstractBundle {
   private static final String BUNDLE = "com.jetbrains.python.impl.PyBundle";
   private static final PyBundle ourInstance = new PyBundle();

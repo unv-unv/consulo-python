@@ -101,8 +101,8 @@ public class EpydocString extends TagBasedDocString {
         "see"
     };
 
-    public EpydocString(Substring docstringText) {
-        super(docstringText, "@");
+    public EpydocString(Substring docStringText) {
+        super(docStringText, "@");
     }
 
     @Override

@@ -18,15 +18,19 @@ package com.jetbrains.python.impl.documentation.docstrings;
 import com.google.common.collect.Lists;
 import com.jetbrains.python.PyNames;
 import com.jetbrains.python.impl.psi.PyUtil;
+import com.jetbrains.python.impl.psi.impl.ResolveResultList;
+import com.jetbrains.python.impl.psi.resolve.ImportedResolveResult;
+import com.jetbrains.python.impl.psi.resolve.QualifiedNameFinder;
 import com.jetbrains.python.impl.psi.types.PyClassTypeImpl;
 import com.jetbrains.python.impl.psi.types.PyImportedModuleType;
 import com.jetbrains.python.impl.psi.types.PyModuleType;
 import com.jetbrains.python.psi.*;
-import com.jetbrains.python.impl.psi.impl.ResolveResultList;
-import com.jetbrains.python.impl.psi.resolve.ImportedResolveResult;
-import com.jetbrains.python.impl.psi.resolve.QualifiedNameFinder;
 import com.jetbrains.python.psi.resolve.RatedResolveResult;
-import com.jetbrains.python.psi.types.*;
+import com.jetbrains.python.psi.types.PyClassType;
+import com.jetbrains.python.psi.types.PyType;
+import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.document.util.TextRange;
 import consulo.language.editor.completion.CompletionUtilCore;
 import consulo.language.psi.*;
@@ -34,13 +38,12 @@ import consulo.language.psi.util.QualifiedName;
 import consulo.language.util.IncorrectOperationException;
 import consulo.util.collection.ArrayUtil;
 import consulo.util.lang.StringUtil;
-
 import org.jspecify.annotations.Nullable;
-import java.util.ArrayList;
+
 import java.util.List;
 
 /**
- * User : catherine
+ * @author catherine
  */
 public class DocStringTypeReference extends PsiPolyVariantReferenceBase<PsiElement>
 {
@@ -58,36 +61,37 @@ public class DocStringTypeReference extends PsiPolyVariantReferenceBase<PsiEleme
 		myImportElement = importElement;
 	}
 
-	@Nullable
+    @Nullable
 	@Override
+    @RequiredWriteAction
 	public PsiElement bindToElement(PsiElement element) throws IncorrectOperationException
 	{
 		if(element.equals(resolve()))
 		{
 			return element;
 		}
-		if(myElement instanceof PyStringLiteralExpression && element instanceof PyClass)
+		if(myElement instanceof PyStringLiteralExpression e && element instanceof PyClass cls)
 		{
-			PyStringLiteralExpression e = (PyStringLiteralExpression) myElement;
-			PyClass cls = (PyClass) element;
-			QualifiedName qname = QualifiedNameFinder.findCanonicalImportPath(cls, element);
-			if(qname != null)
+			QualifiedName qName = QualifiedNameFinder.findCanonicalImportPath(cls, element);
+			if(qName != null)
 			{
-				qname = qname.append(cls.getName());
+				qName = qName.append(cls.getName());
 				ElementManipulator<PyStringLiteralExpression> manipulator = ElementManipulators.getManipulator(e);
 				myType = new PyClassTypeImpl(cls, false);
-				return manipulator.handleContentChange(e, myFullRange, qname.toString());
+				return manipulator.handleContentChange(e, myFullRange, qName.toString());
 			}
 		}
 		return null;
 	}
 
-	public boolean isSoft()
+	@Override
+    public boolean isSoft()
 	{
 		return false;
 	}
 
 	@Override
+    @RequiredWriteAction
 	public PsiElement handleElementRename(String newElementName) throws IncorrectOperationException
 	{
 		newElementName = StringUtil.trimEnd(newElementName, PyNames.DOT_PY);
@@ -95,6 +99,7 @@ public class DocStringTypeReference extends PsiPolyVariantReferenceBase<PsiEleme
 	}
 
 	@Override
+    @RequiredReadAction
 	public boolean isReferenceTo(PsiElement element)
 	{
 		if(myType instanceof PyImportedModuleType)
@@ -105,21 +110,22 @@ public class DocStringTypeReference extends PsiPolyVariantReferenceBase<PsiEleme
 	}
 
 	@Override
+    @RequiredReadAction
 	public ResolveResult[] multiResolve(boolean incompleteCode)
 	{
 		PsiElement result = null;
 		ResolveResultList results = new ResolveResultList();
-		if(myType instanceof PyClassType)
+		if(myType instanceof PyClassType classType)
 		{
-			result = ((PyClassType) myType).getPyClass();
+			result = classType.getPyClass();
 		}
-		else if(myType instanceof PyImportedModuleType)
+		else if(myType instanceof PyImportedModuleType importedModuleType)
 		{
-			result = ((PyImportedModuleType) myType).getImportedModule().resolve();
+			result = importedModuleType.getImportedModule().resolve();
 		}
-		else if(myType instanceof PyModuleType)
+		else if(myType instanceof PyModuleType moduleType)
 		{
-			result = ((PyModuleType) myType).getModule();
+			result = moduleType.getModule();
 		}
 		if(result != null)
 		{
@@ -136,21 +142,24 @@ public class DocStringTypeReference extends PsiPolyVariantReferenceBase<PsiEleme
 	}
 
 	@Override
+    @RequiredReadAction
 	public Object[] getVariants()
 	{
 		// see PyDocstringCompletionContributor
 		return ArrayUtil.EMPTY_OBJECT_ARRAY;
 	}
 
-	public List<Object> collectTypeVariants()
+	@RequiredReadAction
+    public List<Object> collectTypeVariants()
 	{
-		PsiFile file = myElement.getContainingFile();
-		ArrayList<Object> variants = Lists.<Object>newArrayList("str", "int", "basestring", "bool", "buffer", "bytearray", "complex", "dict", "tuple", "enumerate", "file", "float",
-				"frozenset", "list", "long", "set", "object");
-		if(file instanceof PyFile)
+        List<Object> variants = Lists.<Object>newArrayList(
+		    "str", "int", "basestring", "bool", "buffer", "bytearray", "complex", "dict", "tuple", "enumerate", "file", "float",
+			"frozenset", "list", "long", "set", "object"
+        );
+		if(myElement.getContainingFile() instanceof PyFile file)
 		{
-			variants.addAll(((PyFile) file).getTopLevelClasses());
-			List<PyFromImportStatement> fromImports = ((PyFile) file).getFromImports();
+			variants.addAll(file.getTopLevelClasses());
+			List<PyFromImportStatement> fromImports = file.getFromImports();
 			for(PyFromImportStatement fromImportStatement : fromImports)
 			{
 				PyImportElement[] elements = fromImportStatement.getImportElements();
@@ -162,9 +171,9 @@ public class DocStringTypeReference extends PsiPolyVariantReferenceBase<PsiEleme
 						continue;
 					}
 					PyType type = TypeEvalContext.userInitiated(file.getProject(), CompletionUtilCore.getOriginalOrSelf(file)).getType(referenceExpression);
-					if(type instanceof PyClassType)
+					if(type instanceof PyClassType classType)
 					{
-						variants.add(((PyClassType) type).getPyClass());
+						variants.add(classType.getPyClass());
 					}
 				}
 			}

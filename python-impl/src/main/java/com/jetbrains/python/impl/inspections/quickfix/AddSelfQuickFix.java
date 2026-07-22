@@ -18,10 +18,10 @@ package com.jetbrains.python.impl.inspections.quickfix;
 import com.jetbrains.python.psi.PyElementGenerator;
 import com.jetbrains.python.psi.PyNamedParameter;
 import com.jetbrains.python.psi.PyParameterList;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.FileModificationService;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
-import consulo.language.psi.PsiElement;
 import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
@@ -44,15 +44,15 @@ public class AddSelfQuickFix implements LocalQuickFix {
         return PyLocalize.qfixAddParameterSelf(myParamName);
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
-        PsiElement problem_elt = descriptor.getPsiElement();
-        if (problem_elt instanceof PyParameterList) {
-            PyParameterList param_list = (PyParameterList) problem_elt;
-            if (!FileModificationService.getInstance().preparePsiElementForWrite(problem_elt)) {
+        if (descriptor.getPsiElement() instanceof PyParameterList paramList) {
+            if (!FileModificationService.getInstance().preparePsiElementForWrite(paramList)) {
                 return;
             }
             PyNamedParameter new_param = PyElementGenerator.getInstance(project).createParameter(myParamName);
-            param_list.addParameter(new_param);
+            paramList.addParameter(new_param);
         }
     }
 }

@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.refactoring.introduce.constant;
 
-import consulo.language.psi.PsiElement;
-import com.jetbrains.python.impl.PyBundle;
 import com.jetbrains.python.impl.refactoring.introduce.IntroduceValidator;
+import consulo.language.psi.PsiElement;
+import consulo.python.impl.localize.PyLocalize;
 
 /**
  * @author Alexey.Ivanov
  */
 public class ConstantValidator extends IntroduceValidator {
-  public String check(String name, PsiElement psiElement) {
-    if (isDefinedInScope(name, psiElement) || isDefinedInScope(name, psiElement.getContainingFile())) {
-      return PyBundle.message("refactoring.introduce.constant.scope.error");
+    @Override
+    public String check(String name, PsiElement psiElement) {
+        if (isDefinedInScope(name, psiElement) || isDefinedInScope(name, psiElement.getContainingFile())) {
+            return PyLocalize.refactoringIntroduceConstantScopeError().get();
+        }
+        return null;
     }
-    return null;
-  }
 }

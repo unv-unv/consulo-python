@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.buildout.config;
 
 import consulo.language.file.LanguageFileType;
 import consulo.localize.LocalizeValue;
+import consulo.python.impl.icon.PythonImplIconGroup;
 import consulo.ui.image.Image;
-import com.jetbrains.python.impl.PythonIcons;
 
 import org.jspecify.annotations.Nullable;
 
@@ -34,21 +33,25 @@ public class BuildoutCfgFileType extends LanguageFileType {
     super(BuildoutCfgLanguage.INSTANCE);
   }
 
+  @Override
   public String getId() {
     return "BuildoutCfg";
   }
 
+  @Override
   public LocalizeValue getDescription() {
     return LocalizeValue.localizeTODO("Buildout config files");
   }
 
+  @Override
   public String getDefaultExtension() {
     return DEFAULT_EXTENSION;
   }
 
   @Nullable
+  @Override
   public Image getIcon() {
-    return PythonIcons.Python.Buildout.Buildout;
+    return PythonImplIconGroup.pythonBuildoutBuildout();
   }
 }
 

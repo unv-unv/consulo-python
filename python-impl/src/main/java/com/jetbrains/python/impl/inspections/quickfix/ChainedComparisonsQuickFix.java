@@ -19,6 +19,8 @@ import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.psi.PyBinaryExpression;
 import com.jetbrains.python.psi.PyElementGenerator;
 import com.jetbrains.python.psi.PyExpression;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiElement;
@@ -49,29 +51,26 @@ public class ChainedComparisonsQuickFix implements LocalQuickFix {
         return PyLocalize.qfixChainedComparison();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
-        PsiElement expression = descriptor.getPsiElement();
-        if (expression != null && expression.isWritable()) {
-            if (expression instanceof PyBinaryExpression) {
-                PyExpression leftExpression = ((PyBinaryExpression) expression).getLeftExpression();
-                PyExpression rightExpression = ((PyBinaryExpression) expression).getRightExpression();
-                if (rightExpression instanceof PyBinaryExpression && leftExpression instanceof PyBinaryExpression) {
-                    if (((PyBinaryExpression) expression).getOperator() == PyTokenTypes.AND_KEYWORD) {
-                        if (getInnerRight && ((PyBinaryExpression) leftExpression).getRightExpression() instanceof PyBinaryExpression
-                            && PyTokenTypes.AND_KEYWORD == ((PyBinaryExpression) leftExpression).getOperator()) {
-                            leftExpression = ((PyBinaryExpression) leftExpression).getRightExpression();
-                        }
-                        checkOperator((PyBinaryExpression) leftExpression, (PyBinaryExpression) rightExpression, project);
-                    }
-                }
+        if (descriptor.getPsiElement() instanceof PyBinaryExpression binaryExpr
+            && binaryExpr.isWritable()
+            && binaryExpr.getRightExpression() instanceof PyBinaryExpression rightExpr
+            && binaryExpr.getLeftExpression() instanceof PyBinaryExpression leftExpr
+            && binaryExpr.getOperator() == PyTokenTypes.AND_KEYWORD) {
+            PyBinaryExpression leftRightmostExpr = leftExpr;
+            if (getInnerRight
+                && leftExpr.getRightExpression() instanceof PyBinaryExpression leftRightExpression
+                && PyTokenTypes.AND_KEYWORD == leftExpr.getOperator()) {
+                leftRightmostExpr = leftRightExpression;
             }
+            checkOperator(leftRightmostExpr, rightExpr, project);
         }
     }
 
-    private void checkOperator(
-        PyBinaryExpression leftExpression,
-        PyBinaryExpression rightExpression, Project project
-    ) {
+    @RequiredWriteAction
+    private void checkOperator(PyBinaryExpression leftExpression, PyBinaryExpression rightExpression, Project project) {
         PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
         if (myIsLeftLeft) {
             PyExpression newLeftExpression = invertExpression(leftExpression, elementGenerator);
@@ -79,63 +78,69 @@ public class ChainedComparisonsQuickFix implements LocalQuickFix {
             if (myIsRightLeft) {
                 PsiElement operator = getLeftestOperator(rightExpression);
                 PyBinaryExpression binaryExpression = elementGenerator.createBinaryExpression(
-                    operator.getText(), newLeftExpression, getLargeRightExpression(rightExpression, project));
+                    operator.getText(),
+                    newLeftExpression,
+                    getLargeRightExpression(rightExpression, project)
+                );
                 leftExpression.replace(binaryExpression);
                 rightExpression.delete();
             }
             else {
                 String operator = invertOperator(rightExpression.getPsiOperator());
                 PyBinaryExpression binaryExpression = elementGenerator.createBinaryExpression(
-                    operator, newLeftExpression, rightExpression.getLeftExpression());
+                    operator,
+                    newLeftExpression,
+                    rightExpression.getLeftExpression()
+                );
                 leftExpression.replace(binaryExpression);
                 rightExpression.delete();
             }
+        }
+        else if (myIsRightLeft) {
+            PsiElement operator = getLeftestOperator(rightExpression);
+            PyBinaryExpression binaryExpression = elementGenerator.createBinaryExpression(
+                operator.getText(),
+                leftExpression,
+                getLargeRightExpression(rightExpression, project)
+            );
+            leftExpression.replace(binaryExpression);
+            rightExpression.delete();
         }
         else {
-            if (myIsRightLeft) {
-                PsiElement operator = getLeftestOperator(rightExpression);
-                PyBinaryExpression binaryExpression = elementGenerator.createBinaryExpression(
-                    operator.getText(), leftExpression, getLargeRightExpression(rightExpression, project));
-                leftExpression.replace(binaryExpression);
-                rightExpression.delete();
+            PyExpression expression = rightExpression.getLeftExpression();
+            if (expression instanceof PyBinaryExpression binExpr) {
+                expression = invertExpression(binExpr, elementGenerator);
             }
-            else {
-                PyExpression expression = rightExpression.getLeftExpression();
-                if (expression instanceof PyBinaryExpression) {
-                    expression = invertExpression((PyBinaryExpression) expression, elementGenerator);
-                }
-                String operator = invertOperator(rightExpression.getPsiOperator());
-                PyBinaryExpression binaryExpression = elementGenerator.createBinaryExpression(
-                    operator, leftExpression, expression);
-                leftExpression.replace(binaryExpression);
-                rightExpression.delete();
-            }
+            String operator = invertOperator(rightExpression.getPsiOperator());
+            PyBinaryExpression binaryExpression = elementGenerator.createBinaryExpression(operator, leftExpression, expression);
+            leftExpression.replace(binaryExpression);
+            rightExpression.delete();
         }
-
     }
 
     private PsiElement getLeftestOperator(PyBinaryExpression expression) {
         PsiElement op = expression.getPsiOperator();
-        while (expression.getLeftExpression() instanceof PyBinaryExpression) {
-            expression = (PyBinaryExpression) expression.getLeftExpression();
+        while (expression.getLeftExpression() instanceof PyBinaryExpression binExpr) {
+            expression = binExpr;
             op = expression.getPsiOperator();
         }
         assert op != null;
         return op;
     }
 
+    @RequiredReadAction
     private PyExpression invertExpression(PyBinaryExpression leftExpression, PyElementGenerator elementGenerator) {
         PsiElement operator = leftExpression.getPsiOperator();
         PyExpression right = leftExpression.getRightExpression();
         PyExpression left = leftExpression.getLeftExpression();
-        if (left instanceof PyBinaryExpression) {
-            left = invertExpression((PyBinaryExpression) left, elementGenerator);
+        if (left instanceof PyBinaryExpression leftBinary) {
+            left = invertExpression(leftBinary, elementGenerator);
         }
         String newOperator = invertOperator(operator);
-        return elementGenerator.createBinaryExpression(
-            newOperator, right, left);
+        return elementGenerator.createBinaryExpression(newOperator, right, left);
     }
 
+    @RequiredReadAction
     private String invertOperator(PsiElement op) {
         if (op.getText().equals(">")) {
             return "<";
@@ -153,20 +158,17 @@ public class ChainedComparisonsQuickFix implements LocalQuickFix {
     }
 
     @Nullable
+    @RequiredReadAction
     static private PyExpression getLargeRightExpression(PyBinaryExpression expression, Project project) {
         PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
         PyExpression left = expression.getLeftExpression();
         PyExpression right = expression.getRightExpression();
         PsiElement operator = expression.getPsiOperator();
-        while (left instanceof PyBinaryExpression) {
+        while (left instanceof PyBinaryExpression leftBinary) {
             assert operator != null;
-            right = elementGenerator.createBinaryExpression(
-                operator.getText(),
-                ((PyBinaryExpression) left).getRightExpression(),
-                right
-            );
-            operator = ((PyBinaryExpression) left).getPsiOperator();
-            left = ((PyBinaryExpression) left).getLeftExpression();
+            right = elementGenerator.createBinaryExpression(operator.getText(), leftBinary.getRightExpression(), right);
+            operator = leftBinary.getPsiOperator();
+            left = leftBinary.getLeftExpression();
         }
         return right;
     }

@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.python.impl.localize.PyLocalize;
 import org.jspecify.annotations.Nullable;
 
@@ -106,6 +108,7 @@ public class ConvertFormatOperatorToMethodIntention extends PyBaseIntentionActio
      *
      * @return a pair of string builder with resulting string expression and a flag which is true if formats inside use mapping by name.
      */
+    @RequiredReadAction
     private static Pair<StringBuilder, Boolean> convertFormat(PyStringLiteralExpression stringLiteralExpression, String prefix) {
         // python string may be made of several literals, all different
         List<StringBuilder> constants = new ArrayList<>();
@@ -154,7 +157,7 @@ public class ConvertFormatOperatorToMethodIntention extends PyBaseIntentionActio
                 }
                 else {
                     sure(fConversion);
-                    sure(!"%".equals(fConversion)); // a padded percent literal; can't bother to autoconvert, and in 3k % is different.
+                    sure(!"%".equals(fConversion)); // a padded percent literal; can't bother to auto-convert, and in 3k % is different.
                     out.append("{");
                     if (f_key != null) {
                         out.append(f_key);
@@ -253,6 +256,8 @@ public class ConvertFormatOperatorToMethodIntention extends PyBaseIntentionActio
         return where.indexOf(what) >= 0;
     }
 
+    @Override
+    @RequiredReadAction
     public boolean isAvailable(Project project, Editor editor, PsiFile file) {
         if (!(file instanceof PyFile)) {
             return false;
@@ -291,6 +296,7 @@ public class ConvertFormatOperatorToMethodIntention extends PyBaseIntentionActio
     }
 
     @Override
+    @RequiredWriteAction
     public void doInvoke(Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
         PsiElement elementAt = file.findElementAt(editor.getCaretModel().getOffset());
         PyBinaryExpression element = PsiTreeUtil.getParentOfType(elementAt, PyBinaryExpression.class, false);
@@ -350,22 +356,20 @@ public class ConvertFormatOperatorToMethodIntention extends PyBaseIntentionActio
         element.replace(sure(((PyParenthesizedExpression) parenthesized).getContainedExpression()));
     }
 
+    @RequiredReadAction
     private static boolean isDictCall(PyExpression callee, PyClassType classType) {
         PyClassType dictType = PyBuiltinCache.getInstance(callee.getContainingFile()).getDictType();
-        if (dictType != null && classType.getPyClass() == dictType.getPyClass()) {
-            if (callee instanceof PyReferenceExpression) {
-                PsiElement maybeDict = ((PyReferenceExpression) callee).getReference().resolve();
-                PyFunction dictInit = PyUtil.as(maybeDict, PyFunction.class);
-                if (dictInit != null) {
-                    if (PyNames.INIT.equals(dictInit.getName())) {
-                        return true;
-                    }
-                }
+        if (dictType != null && classType.getPyClass() == dictType.getPyClass() && callee instanceof PyReferenceExpression refExpr) {
+            PsiElement maybeDict = refExpr.getReference().resolve();
+            PyFunction dictInit = PyUtil.as(maybeDict, PyFunction.class);
+            if (dictInit != null && PyNames.INIT.equals(dictInit.getName())) {
+                return true;
             }
         }
         return false;
     }
 
+    @RequiredReadAction
     private static String getSeparator(PyStringLiteralExpression leftExpression) {
         String separator = ""; // detect nontrivial whitespace around the "%"
         Pair<String, PsiElement> crop = collectWhitespace(leftExpression);
@@ -383,6 +387,7 @@ public class ConvertFormatOperatorToMethodIntention extends PyBaseIntentionActio
         return separator;
     }
 
+    @RequiredReadAction
     private static Pair<String, PsiElement> collectWhitespace(PsiElement start) {
         StringBuilder sb = new StringBuilder();
         PsiElement seeker = start;

@@ -19,14 +19,13 @@ import com.google.common.collect.Lists;
 import com.jetbrains.python.impl.testing.pytest.PyTestUtil;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFunction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.codeEditor.Editor;
-import consulo.language.editor.CodeInsightBundle;
 import consulo.language.editor.intention.PsiElementBaseIntentionAction;
 import consulo.language.editor.localize.CodeInsightLocalize;
 import consulo.language.psi.PsiDirectory;
 import consulo.language.psi.PsiDocumentManager;
 import consulo.language.psi.PsiElement;
-import consulo.language.psi.PsiFile;
 import consulo.language.psi.util.PsiTreeUtil;
 import consulo.language.util.IncorrectOperationException;
 import consulo.localize.LocalizeValue;
@@ -45,16 +44,15 @@ public class CreateTestAction extends PsiElementBaseIntentionAction {
         return CodeInsightLocalize.intentionCreateTest();
     }
 
+    @Override
     public boolean isAvailable(Project project, Editor editor, PsiElement element) {
         PyClass psiClass = PsiTreeUtil.getParentOfType(element, PyClass.class);
 
-        if (psiClass != null && PyTestUtil.isPyTestClass(psiClass, null)) {
-            return false;
-        }
-        return true;
+        return psiClass == null || !PyTestUtil.isPyTestClass(psiClass, null);
     }
 
     @Override
+    @RequiredWriteAction
     public void invoke(Project project, Editor editor, PsiElement element) throws IncorrectOperationException {
         PyFunction srcFunction = PsiTreeUtil.getParentOfType(element, PyFunction.class);
         PyClass srcClass = PsiTreeUtil.getParentOfType(element, PyClass.class);
@@ -108,10 +106,13 @@ public class CreateTestAction extends PsiElementBaseIntentionAction {
         if (!d.showAndGet()) {
             return;
         }
-        CommandProcessor.getInstance().executeCommand(project, () -> {
-            PsiFile e = PyTestCreator.generateTestAndNavigate(project, d);
-            PsiDocumentManager documentManager = PsiDocumentManager.getInstance(project);
-            documentManager.commitAllDocuments();
-        }, CodeInsightBundle.message("intention.create.test"), this);
+        CommandProcessor.getInstance().newCommand()
+            .project(project)
+            .name(CodeInsightLocalize.intentionCreateTest())
+            .run(() -> {
+                PyTestCreator.generateTestAndNavigate(project, d);
+                PsiDocumentManager documentManager = PsiDocumentManager.getInstance(project);
+                documentManager.commitAllDocuments();
+            });
     }
 }

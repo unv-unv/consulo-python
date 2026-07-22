@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.buildout.config.ref;
 
 import com.google.common.collect.Lists;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.document.util.TextRange;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiReferenceBase;
@@ -46,6 +47,8 @@ public class BuildoutPartReference extends PsiReferenceBase<PsiElement> {
     return TextRange.from(myOffsetInElement, myPartName.length());
   }
 
+  @Override
+  @RequiredReadAction
   public PsiElement resolve() {
     BuildoutCfgFile file = PsiTreeUtil.getParentOfType(myElement, BuildoutCfgFile.class);
     if (file != null) {
@@ -54,6 +57,8 @@ public class BuildoutPartReference extends PsiReferenceBase<PsiElement> {
     return null;
   }
 
+  @Override
+  @RequiredReadAction
   public Object[] getVariants() {
     List<String> res = Lists.newArrayList();
     BuildoutCfgFile file = PsiTreeUtil.getParentOfType(myElement, BuildoutCfgFile.class);
@@ -70,6 +75,7 @@ public class BuildoutPartReference extends PsiReferenceBase<PsiElement> {
   }
 
   @Override
+  @RequiredWriteAction
   public PsiElement handleElementRename(String newElementName) {
     String fullName = PythonStringUtil.replaceLastSuffix(getElement().getText(), "/", newElementName);
     return myElement.replace(PyElementGenerator.getInstance(myElement.getProject()).createStringLiteralAlreadyEscaped(fullName));

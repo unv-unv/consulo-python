@@ -17,6 +17,7 @@ package com.jetbrains.python.impl.inspections.quickfix;
 
 import com.jetbrains.python.codeInsight.controlflow.ScopeOwner;
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiElement;
@@ -24,7 +25,7 @@ import consulo.language.psi.util.PsiTreeUtil;
 import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 
 /**
  * @author oleg
@@ -35,14 +36,15 @@ public class AddGlobalQuickFix implements LocalQuickFix {
     return PyLocalize.qfixAddGlobal();
   }
 
+  @Override
+  @RequiredWriteAction
   public void applyFix(Project project, ProblemDescriptor descriptor) {
     PsiElement problemElt = descriptor.getPsiElement();
-    if (problemElt instanceof PyReferenceExpression) {
-      PyReferenceExpression expression = (PyReferenceExpression)problemElt;
+    if (problemElt instanceof PyReferenceExpression expression) {
       final String name = expression.getReferencedName();
       ScopeOwner owner = PsiTreeUtil.getParentOfType(problemElt, ScopeOwner.class);
       assert owner instanceof PyClass || owner instanceof PyFunction : "Add global quickfix is available only inside class or function, but applied for " + owner;
-      final Ref<Boolean> added = new Ref<Boolean>(false);
+      final SimpleReference<Boolean> added = new SimpleReference<>(false);
       owner.accept(new PyRecursiveElementVisitor(){
         @Override
         public void visitElement(PsiElement element) {

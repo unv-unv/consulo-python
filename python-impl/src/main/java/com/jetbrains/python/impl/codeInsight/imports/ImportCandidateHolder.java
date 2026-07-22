@@ -162,6 +162,7 @@ public class ImportCandidateHolder implements Comparable<ImportCandidateHolder> 
     return sb.toString();
   }
 
+  @Override
   public int compareTo(ImportCandidateHolder other) {
     int lRelevance = getRelevance();
     int rRelevance = other.getRelevance();

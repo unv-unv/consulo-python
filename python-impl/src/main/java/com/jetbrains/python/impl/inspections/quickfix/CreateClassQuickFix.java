@@ -20,6 +20,7 @@ import com.jetbrains.python.psi.LanguageLevel;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyElementGenerator;
 import com.jetbrains.python.psi.PyFile;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.CodeInsightUtilCore;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
@@ -49,6 +50,8 @@ public class CreateClassQuickFix implements LocalQuickFix {
         return LocalizeValue.localizeTODO("Create class '" + myClassName + "'");
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiElement anchor = myAnchor;
         if (!anchor.isValid()) {
@@ -59,9 +62,8 @@ public class CreateClassQuickFix implements LocalQuickFix {
                 anchor = anchor.getParent();
             }
         }
-        PyClass pyClass = PyElementGenerator.getInstance(project).createFromText(LanguageLevel.getDefault(), PyClass.class,
-            "class " + myClassName + "(object):\n    pass"
-        );
+        PyClass pyClass = PyElementGenerator.getInstance(project)
+            .createFromText(LanguageLevel.getDefault(), PyClass.class, "class " + myClassName + "(object):\n    pass");
         if (anchor instanceof PyFile) {
             pyClass = (PyClass) anchor.add(pyClass);
         }

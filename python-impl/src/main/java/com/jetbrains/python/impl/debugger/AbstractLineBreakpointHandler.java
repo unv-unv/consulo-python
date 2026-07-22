@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.debugger;
 
 import com.google.common.collect.Lists;
@@ -49,6 +48,7 @@ public class AbstractLineBreakpointHandler extends XBreakpointHandler<XLineBreak
     }
   }
 
+  @Override
   public void registerBreakpoint(XLineBreakpoint<XBreakpointProperties> breakpoint) {
     XSourcePosition position = breakpoint.getSourcePosition();
     if (position != null) {
@@ -57,6 +57,7 @@ public class AbstractLineBreakpointHandler extends XBreakpointHandler<XLineBreak
     }
   }
 
+  @Override
   public void unregisterBreakpoint(XLineBreakpoint<XBreakpointProperties> breakpoint, boolean temporary) {
     XSourcePosition position = myBreakPointPositions.get(breakpoint);
     if (position != null) {

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.buildout.config.psi.impl;
 
 import com.google.common.collect.Lists;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.impl.psi.PsiFileBase;
 import consulo.virtualFileSystem.fileType.FileType;
 import consulo.util.lang.StringUtil;
@@ -40,6 +40,7 @@ public class BuildoutCfgFile extends PsiFileBase
     super(viewProvider, BuildoutCfgLanguage.INSTANCE);
   }
 
+  @Override
   public FileType getFileType() {
     return BuildoutCfgFileType.INSTANCE;
   }
@@ -49,11 +50,13 @@ public class BuildoutCfgFile extends PsiFileBase
     return "buildout.cfg file";
   }
 
+  @RequiredReadAction
   public Collection<BuildoutCfgSection> getSections() {
     return PsiTreeUtil.collectElementsOfType(this, BuildoutCfgSection.class);
   }
 
   @Nullable
+  @RequiredReadAction
   public BuildoutCfgSection findSectionByName(String name) {
     Collection<BuildoutCfgSection> sections = getSections();
     for (BuildoutCfgSection section : sections) {
@@ -64,6 +67,7 @@ public class BuildoutCfgFile extends PsiFileBase
     return null;
   }
 
+  @RequiredReadAction
   public List<String> getParts() {
     BuildoutCfgSection buildoutSection = findSectionByName("buildout");
     if (buildoutSection == null) {
