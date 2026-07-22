@@ -19,6 +19,7 @@ import com.jetbrains.python.impl.psi.impl.PyStringLiteralExpressionImpl;
 import com.jetbrains.python.psi.PyElementGenerator;
 import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.PyStringLiteralExpression;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.PsiElement;
@@ -39,14 +40,15 @@ public class ConvertDocstringQuickFix implements LocalQuickFix {
         return PyLocalize.qfixConvertSingleQuotedDocstring();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiElement expression = descriptor.getPsiElement();
         if (expression instanceof PyStringLiteralExpression && expression.isWritable()) {
             PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
 
             String stringText = expression.getText();
-            int prefixLength = PyStringLiteralExpressionImpl
-                .getPrefixLength(stringText);
+            int prefixLength = PyStringLiteralExpressionImpl.getPrefixLength(stringText);
             String prefix = stringText.substring(0, prefixLength);
             String content = stringText.substring(prefixLength);
             if (content.startsWith("'''")) {

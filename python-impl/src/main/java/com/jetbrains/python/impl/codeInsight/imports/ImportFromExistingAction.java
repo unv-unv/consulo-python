@@ -15,31 +15,34 @@
  */
 package com.jetbrains.python.impl.codeInsight.imports;
 
-import consulo.language.editor.hint.QuestionAction;
-import consulo.dataContext.DataManager;
-import consulo.language.inject.InjectedLanguageManager;
-import consulo.application.ApplicationManager;
+import com.jetbrains.python.psi.*;
+import com.jetbrains.python.psi.impl.PyPsiUtils;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
+import consulo.application.Application;
 import consulo.application.Result;
-import consulo.language.editor.WriteCommandAction;
 import consulo.colorScheme.EditorColorsManager;
 import consulo.colorScheme.EditorColorsScheme;
-import consulo.project.Project;
-import consulo.module.content.ProjectFileIndex;
+import consulo.dataContext.DataManager;
 import consulo.ide.impl.ui.impl.PopupChooserBuilder;
-import consulo.util.lang.Comparing;
-import consulo.virtualFileSystem.VirtualFile;
+import consulo.language.editor.WriteCommandAction;
+import consulo.language.editor.hint.QuestionAction;
+import consulo.language.icon.IconDescriptorUpdaters;
+import consulo.language.inject.InjectedLanguageManager;
 import consulo.language.psi.PsiDocumentManager;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
 import consulo.language.psi.PsiFileSystemItem;
 import consulo.language.psi.util.QualifiedName;
-import consulo.ui.ex.awt.SimpleColoredComponent;
+import consulo.module.content.ProjectFileIndex;
+import consulo.project.Project;
+import consulo.python.impl.localize.PyLocalize;
+import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.SimpleTextAttributes;
 import consulo.ui.ex.awt.JBList;
-import com.jetbrains.python.impl.PyBundle;
-import com.jetbrains.python.psi.*;
-import com.jetbrains.python.psi.impl.PyPsiUtils;
-import consulo.language.icon.IconDescriptorUpdaters;
+import consulo.ui.ex.awt.SimpleColoredComponent;
+import consulo.util.lang.Comparing;
+import consulo.virtualFileSystem.VirtualFile;
 
 import javax.swing.*;
 import java.awt.*;
@@ -63,7 +66,7 @@ public class ImportFromExistingAction implements QuestionAction
 	 * @param target       element to become qualified as imported.
 	 * @param sources      clauses of import to be used.
 	 * @param name         relevant name ot the target element (e.g. of identifier in an expression).
-	 * @param useQualified if True, use qualified "import modulename" instead of "from modulename import ...".
+	 * @param useQualified if True, use qualified "import moduleName" instead of "from moduleName import ...".
 	 */
 	public ImportFromExistingAction(PsiElement target, List<ImportCandidateHolder> sources, String name, boolean useQualified, boolean importLocally)
 	{
@@ -86,7 +89,9 @@ public class ImportFromExistingAction implements QuestionAction
 	 *
 	 * @return true if action succeeded
 	 */
-	public boolean execute()
+    @Override
+    @RequiredUIAccess
+    public boolean execute()
 	{
 		// check if the tree is sane
 		PsiDocumentManager.getInstance(myTarget.getProject()).commitAllDocuments();
@@ -110,7 +115,7 @@ public class ImportFromExistingAction implements QuestionAction
 			return false;
 		}
 		// act
-		if(mySources.size() == 1 || ApplicationManager.getApplication().isUnitTestMode())
+		if(mySources.size() == 1 || Application.get().isUnitTestMode())
 		{
 			doWriteAction(mySources.get(0));
 		}
@@ -125,9 +130,10 @@ public class ImportFromExistingAction implements QuestionAction
 	{
 		// GUI part
 		ImportCandidateHolder[] items = mySources.toArray(new ImportCandidateHolder[mySources.size()]); // silly JList can't handle modern collections
-		JList list = new JBList(items);
+		JList<ImportCandidateHolder> list = new JBList<>(items);
 		list.setCellRenderer(new CellRenderer(myName));
 
+        @RequiredWriteAction
 		Runnable runnable = () -> {
 			Object selected = list.getSelectedValue();
 			if(selected instanceof ImportCandidateHolder)
@@ -138,10 +144,18 @@ public class ImportFromExistingAction implements QuestionAction
 			}
 		};
 
-		DataManager.getInstance().getDataContextFromFocus().doWhenDone(dataContext -> new PopupChooserBuilder(list).setTitle(myUseQualifiedImport ? PyBundle.message("ACT.qualify.with.module") : PyBundle.message("ACT.from.some.module.import")).setItemChoosenCallback(runnable).setFilteringEnabled(o -> ((ImportCandidateHolder) o).getPresentableText(myName)).createPopup().showInBestPositionFor(dataContext));
+		DataManager.getInstance().getDataContextFromFocus().doWhenDone(
+		    dataContext -> new PopupChooserBuilder(list)
+                .setTitle(myUseQualifiedImport ? PyLocalize.actQualifyWithModule().get() : PyLocalize.actFromSomeModuleImport().get())
+                .setItemChoosenCallback(runnable)
+                .setFilteringEnabled(o -> ((ImportCandidateHolder) o).getPresentableText(myName))
+                .createPopup()
+                .showInBestPositionFor(dataContext)
+        );
 	}
 
-	private void doIt(ImportCandidateHolder item)
+	@RequiredWriteAction
+    private void doIt(ImportCandidateHolder item)
 	{
 		PyImportElement src = item.getImportElement();
 		if(src != null)
@@ -154,7 +168,8 @@ public class ImportFromExistingAction implements QuestionAction
 		}
 	}
 
-	private void addImportStatement(ImportCandidateHolder item)
+	@RequiredWriteAction
+    private void addImportStatement(ImportCandidateHolder item)
 	{
 		Project project = myTarget.getProject();
 		PyElementGenerator gen = PyElementGenerator.getInstance(project);
@@ -212,8 +227,8 @@ public class ImportFromExistingAction implements QuestionAction
 		}
 	}
 
-
-	private void addToExistingImport(PyImportElement src)
+	@RequiredWriteAction
+    private void addToExistingImport(PyImportElement src)
 	{
 		PyElementGenerator gen = PyElementGenerator.getInstance(myTarget.getProject());
 		// did user choose 'import' or 'from import'?
@@ -231,12 +246,14 @@ public class ImportFromExistingAction implements QuestionAction
 		}
 	}
 
-	private void doWriteAction(final ImportCandidateHolder item)
+	@RequiredUIAccess
+    private void doWriteAction(final ImportCandidateHolder item)
 	{
 		PsiElement src = item.getImportable();
-		new WriteCommandAction(src.getProject(), PyBundle.message("ACT.CMD.use.import"), myTarget.getContainingFile())
+		new WriteCommandAction(src.getProject(), PyLocalize.actCmdUseImport().get(), myTarget.getContainingFile())
 		{
-			@Override
+            @Override
+            @RequiredWriteAction
 			protected void run(Result result) throws Throwable
 			{
 				doIt(item);
@@ -260,7 +277,9 @@ public class ImportFromExistingAction implements QuestionAction
 			return true;
 		}
 		ProjectFileIndex fileIndex = ProjectFileIndex.SERVICE.getInstance(directory.getProject());
-		return Comparing.equal(fileIndex.getClassRootForFile(vFile), vFile) || Comparing.equal(fileIndex.getContentRootForFile(vFile), vFile) || Comparing.equal(fileIndex.getSourceRootForFile(vFile), vFile);
+		return Comparing.equal(fileIndex.getClassRootForFile(vFile), vFile)
+            || Comparing.equal(fileIndex.getContentRootForFile(vFile), vFile)
+            || Comparing.equal(fileIndex.getSourceRootForFile(vFile), vFile);
 	}
 
 	// Stolen from FQNameCellRenderer
@@ -278,9 +297,15 @@ public class ImportFromExistingAction implements QuestionAction
 		}
 
 		// value is a QualifiedHolder
-		public Component getListCellRendererComponent(JList list, Object value, // expected to be
-				int index, boolean isSelected, boolean cellHasFocus)
-		{
+        @Override
+        @RequiredReadAction
+        public Component getListCellRendererComponent(
+            JList list,
+            Object value, // expected to be
+            int index,
+            boolean isSelected,
+            boolean cellHasFocus
+        ) {
 
 			clear();
 

@@ -1,6 +1,5 @@
 package com.jetbrains.python.debugger.pydev;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -10,8 +9,8 @@ import consulo.application.ApplicationManager;
 import consulo.execution.debug.breakpoint.SuspendPolicy;
 import consulo.execution.debug.frame.XValueChildrenList;
 import consulo.logging.Logger;
-
 import org.jspecify.annotations.Nullable;
+
 import java.util.*;
 
 /**
@@ -163,7 +162,8 @@ public class ClientModeMultiProcessDebugger implements ProcessDebugger
 		return debugger(threadId).loadVariable(threadId, frameId, var);
 	}
 
-	public ArrayChunk loadArrayItems(String threadId, String frameId, PyDebugValue var, int rowOffset, int colOffset, int rows, int cols, String format) throws PyDebuggerException
+	@Override
+    public ArrayChunk loadArrayItems(String threadId, String frameId, PyDebugValue var, int rowOffset, int colOffset, int rows, int cols, String format) throws PyDebuggerException
 	{
 		return debugger(threadId).loadArrayItems(threadId, frameId, var, rowOffset, colOffset, rows, cols, format);
 	}
@@ -250,17 +250,12 @@ public class ClientModeMultiProcessDebugger implements ProcessDebugger
 		if(!isOtherDebuggersEmpty())
 		{
 			//here we add process id to thread name in case there are more then one process
-			return Collections.unmodifiableCollection(Collections2.transform(threads, new Function<PyThreadInfo, PyThreadInfo>()
-			{
-				@Override
-				public PyThreadInfo apply(PyThreadInfo t)
-				{
-					String threadName = ThreadRegistry.threadName(t.getName(), t.getId());
-					PyThreadInfo newThread = new PyThreadInfo(t.getId(), threadName, t.getFrames(), t.getStopReason(), t.getMessage());
-					newThread.updateState(t.getState(), t.getFrames());
-					return newThread;
-				}
-			}));
+			return Collections.unmodifiableCollection(Collections2.transform(threads, t -> {
+                String threadName = ThreadRegistry.threadName(t.getName(), t.getId());
+                PyThreadInfo newThread = new PyThreadInfo(t.getId(), threadName, t.getFrames(), t.getStopReason(), t.getMessage());
+                newThread.updateState(t.getState(), t.getFrames());
+                return newThread;
+            }));
 		}
 		else
 		{
@@ -439,7 +434,8 @@ public class ClientModeMultiProcessDebugger implements ProcessDebugger
 		}
 	}
 
-	public void addCloseListener(RemoteDebuggerCloseListener listener)
+	@Override
+    public void addCloseListener(RemoteDebuggerCloseListener listener)
 	{
 		myMainDebugger.addCloseListener(listener);
 	}

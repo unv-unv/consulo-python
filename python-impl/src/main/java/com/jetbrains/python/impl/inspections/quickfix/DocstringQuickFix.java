@@ -18,6 +18,7 @@ package com.jetbrains.python.impl.inspections.quickfix;
 import com.jetbrains.python.impl.codeInsight.intentions.PyGenerateDocstringIntention;
 import com.jetbrains.python.impl.documentation.docstrings.PyDocstringGenerator;
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
 import consulo.language.psi.SmartPointerManager;
@@ -63,6 +64,8 @@ public class DocstringQuickFix implements LocalQuickFix {
         }
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PyDocStringOwner docStringOwner = PsiTreeUtil.getParentOfType(descriptor.getPsiElement(), PyDocStringOwner.class);
         if (docStringOwner == null) {

@@ -15,7 +15,6 @@
  */
 package com.jetbrains.python.impl.debugger.dataframe;
 
-
 import consulo.project.Project;
 import com.jetbrains.python.debugger.ArrayChunk;
 import com.jetbrains.python.debugger.PyDebugValue;
@@ -26,40 +25,34 @@ import com.jetbrains.python.impl.debugger.containerview.NumericContainerViewTabl
 import com.jetbrains.python.impl.debugger.containerview.ViewNumericContainerDialog;
 
 /**
+ * A bunch of this is copied from NumpyArrayTable.
+ *
  * @author amarch
  */
-  /* A bunch of this is copied from NumpyArrayTable*/
+public class DataFrameTable extends NumericContainerViewTable implements TableChunkDatasource {
+    private Project myProject;
 
-public class DataFrameTable extends NumericContainerViewTable implements TableChunkDatasource
-{
+    public DataFrameTable(Project project, ViewNumericContainerDialog dialog, PyDebugValue value) {
+        super(project, dialog, value);
+    }
 
-	private Project myProject;
+    @Override
+    protected AsyncArrayTableModel createTableModel(int rowCount, int columnCount) {
+        return new DataFrameTableModel(rowCount, columnCount, this);
+    }
 
-	public DataFrameTable(Project project, ViewNumericContainerDialog dialog, PyDebugValue value)
-	{
-		super(project, dialog, value);
-	}
+    @Override
+    protected ColoredCellRenderer createCellRenderer(double minValue, double maxValue, ArrayChunk chunk) {
+        return new DataFrameTableCellRenderer();
+    }
 
-	@Override
-	protected AsyncArrayTableModel createTableModel(int rowCount, int columnCount)
-	{
-		return new DataFrameTableModel(rowCount, columnCount, this);
-	}
+    @Override
+    public boolean isNumeric() {
+        return true;
+    }
 
-	@Override
-	protected ColoredCellRenderer createCellRenderer(double minValue, double maxValue, ArrayChunk chunk)
-	{
-		return new DataFrameTableCellRenderer();
-	}
-
-	@Override
-	public boolean isNumeric()
-	{
-		return true;
-	}
-
-	protected final String getTitlePresentation(String slice)
-	{
-		return "DataFrame View: " + slice;
-	}
+    @Override
+    protected final String getTitlePresentation(String slice) {
+        return "DataFrame View: " + slice;
+    }
 }

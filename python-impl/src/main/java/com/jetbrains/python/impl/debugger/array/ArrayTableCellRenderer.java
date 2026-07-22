@@ -49,7 +49,8 @@ class ArrayTableCellRenderer extends DefaultTableCellRenderer implements Colored
 		myType = type;
 	}
 
-	public void setColored(boolean colored)
+	@Override
+    public void setColored(boolean colored)
 	{
 		myColored = colored;
 	}
@@ -60,7 +61,8 @@ class ArrayTableCellRenderer extends DefaultTableCellRenderer implements Colored
 		return myColored;
 	}
 
-	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col)
+	@Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col)
 	{
 		super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
 		if(value != null)

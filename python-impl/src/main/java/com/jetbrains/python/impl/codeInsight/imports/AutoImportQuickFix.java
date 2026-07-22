@@ -15,13 +15,13 @@
  */
 package com.jetbrains.python.impl.codeInsight.imports;
 
-import com.jetbrains.python.impl.PyBundle;
 import com.jetbrains.python.impl.codeInsight.PyCodeInsightSettings;
 import com.jetbrains.python.psi.PyElement;
 import com.jetbrains.python.psi.PyFunction;
 import com.jetbrains.python.psi.PyImportElement;
 import com.jetbrains.python.psi.PyQualifiedExpression;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.codeEditor.Editor;
 import consulo.language.editor.AutoImportHelper;
 import consulo.language.editor.FileModificationService;
@@ -35,9 +35,9 @@ import consulo.localize.LocalizeValue;
 import consulo.module.content.ProjectFileIndex;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
+import consulo.ui.annotation.RequiredUIAccess;
 import consulo.util.collection.ContainerUtil;
 import consulo.virtualFileSystem.VirtualFile;
-
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ import static com.jetbrains.python.impl.psi.PyUtil.as;
 
 /**
  * The object contains a list of import candidates and serves only to show the initial hint;
- * the actual work is done in ImportFromExistingAction..
+ * the actual work is done in ImportFromExistingAction.
  *
  * @author dcheryasov
  */
@@ -135,6 +135,7 @@ public class AutoImportQuickFix extends LocalQuickFixOnPsiElement implements Hig
         }
     }
 
+    @RequiredUIAccess
     public boolean showHint(Editor editor) {
         if (!PyCodeInsightSettings.getInstance().SHOW_IMPORT_POPUP ||
             HintManager.getInstance().hasShownHintsThatWillHideByOtherHint(true) ||
@@ -163,8 +164,7 @@ public class AutoImportQuickFix extends LocalQuickFixOnPsiElement implements Hig
             ImportCandidateHolder.getQualifiedName(
                 myInitialName,
                 myImports.get(0).getPath(),
-                myImports.get(0).getImportElement
-                    ()
+                myImports.get(0).getImportElement()
             )
         );
         ImportFromExistingAction action =
@@ -174,6 +174,8 @@ public class AutoImportQuickFix extends LocalQuickFixOnPsiElement implements Hig
         return true;
     }
 
+    @Override
+    @RequiredReadAction
     public boolean isAvailable() {
         PsiElement element = getStartElement();
         if (element == null) {
@@ -184,10 +186,12 @@ public class AutoImportQuickFix extends LocalQuickFixOnPsiElement implements Hig
     }
 
     @Override
+    @RequiredUIAccess
     public void invoke(Project project, PsiFile file, PsiElement startElement, PsiElement endElement) {
         invoke(getStartElement().getContainingFile());
     }
 
+    @RequiredUIAccess
     public void invoke(PsiFile file) throws IncorrectOperationException {
         // make sure file is committed, writable, etc
         PsiElement startElement = getStartElement();
@@ -258,9 +262,10 @@ public class AutoImportQuickFix extends LocalQuickFixOnPsiElement implements Hig
         return myInitialName;
     }
 
+    @RequiredReadAction
     private static boolean isResolved(PsiReference reference) {
-        if (reference instanceof PsiPolyVariantReference) {
-            return ((PsiPolyVariantReference) reference).multiResolve(false).length > 0;
+        if (reference instanceof PsiPolyVariantReference polyRef) {
+            return polyRef.multiResolve(false).length > 0;
         }
         return reference.resolve() != null;
     }

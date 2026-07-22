@@ -44,6 +44,7 @@ import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.resolve.RatedResolveResult;
 import com.jetbrains.python.psi.types.*;
+import consulo.annotation.DeprecationInfo;
 import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.access.RequiredWriteAction;
 import consulo.application.Application;
@@ -77,6 +78,7 @@ import consulo.language.psi.util.PsiTreeUtil;
 import consulo.language.psi.util.QualifiedName;
 import consulo.language.scratch.ScratchFileService;
 import consulo.language.util.IncorrectOperationException;
+import consulo.localize.LocalizeValue;
 import consulo.module.Module;
 import consulo.module.ModuleManager;
 import consulo.module.content.ModuleRootManager;
@@ -259,6 +261,20 @@ public class PyUtil {
      * @param notificationType message type, changes the icon and the background.
      */
     // TODO: move to a better place
+    public static void showBalloon(Project project, LocalizeValue message, NotificationType notificationType) {
+        showBalloon(project, message.get(), notificationType);
+    }
+
+    /**
+     * Shows an information balloon in a reasonable place at the top right of the window.
+     *
+     * @param project          our project
+     * @param message          the text, HTML markup allowed
+     * @param notificationType message type, changes the icon and the background.
+     */
+    // TODO: move to a better place
+    @Deprecated
+    @DeprecationInfo("Use variant with LocalizeValue")
     public static void showBalloon(Project project, String message, NotificationType notificationType) {
         // ripped from com.intellij.openapi.vcs.changes.ui.ChangesViewBalloonProblemNotifier
         JFrame frame = WindowManager.getInstance().getFrame(project.isDefault() ? null : project);

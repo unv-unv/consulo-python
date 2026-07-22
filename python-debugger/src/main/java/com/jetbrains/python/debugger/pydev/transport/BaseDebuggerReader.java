@@ -1,17 +1,16 @@
 package com.jetbrains.python.debugger.pydev.transport;
 
+import com.jetbrains.python.debugger.pydev.RemoteDebugger;
+import consulo.application.Application;
+import consulo.logging.Logger;
+import consulo.process.io.BaseOutputReader;
+import consulo.util.lang.TimeoutUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.Future;
-
-
-import consulo.application.ApplicationManager;
-import consulo.logging.Logger;
-import consulo.util.lang.TimeoutUtil;
-import consulo.process.io.BaseOutputReader;
-import com.jetbrains.python.debugger.pydev.RemoteDebugger;
 
 /**
  * @author Alexander Koshevoy
@@ -34,7 +33,8 @@ public abstract class BaseDebuggerReader extends BaseOutputReader
 		return myDebugger;
 	}
 
-	protected void doRun()
+	@Override
+    protected void doRun()
 	{
 		try
 		{
@@ -73,7 +73,7 @@ public abstract class BaseDebuggerReader extends BaseOutputReader
 	@Override
 	protected Future<?> executeOnPooledThread(Runnable runnable)
 	{
-		return ApplicationManager.getApplication().executeOnPooledThread(runnable);
+		return Application.get().executeOnPooledThread(runnable);
 	}
 
 	@Override

@@ -16,6 +16,8 @@
 package com.jetbrains.python.impl.codeInsight.intentions;
 
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.codeEditor.Editor;
 import consulo.language.ast.ASTNode;
 import consulo.language.editor.intention.BaseIntentionAction;
@@ -52,13 +54,14 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         return PyLocalize.intnConvertVariadicParam();
     }
 
+    @Override
+    @RequiredReadAction
     public boolean isAvailable(Project project, Editor editor, PsiFile file) {
         if (!(file instanceof PyFile)) {
             return false;
         }
 
-        PyFunction function =
-            PsiTreeUtil.getParentOfType(file.findElementAt(editor.getCaretModel().getOffset()), PyFunction.class);
+        PyFunction function = PsiTreeUtil.getParentOfType(file.findElementAt(editor.getCaretModel().getOffset()), PyFunction.class);
         if (function != null) {
             PyParameter[] parameterList = function.getParameterList().getParameters();
             for (PyParameter parameter : parameterList) {
@@ -91,6 +94,8 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         return null;
     }
 
+    @Override
+    @RequiredWriteAction
     public void invoke(Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
         PyFunction function =
             PsiTreeUtil.getParentOfType(file.findElementAt(editor.getCaretModel().getOffset()), PyFunction.class);
@@ -103,10 +108,11 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
      *
      * @param function
      */
+    @RequiredReadAction
     private static List<PySubscriptionExpression> fillSubscriptions(PyFunction function) {
-        List<PySubscriptionExpression> subscriptions = new ArrayList<PySubscriptionExpression>();
+        List<PySubscriptionExpression> subscriptions = new ArrayList<>();
         PyStatementList statementList = function.getStatementList();
-        Stack<PsiElement> stack = new Stack<PsiElement>();
+        Stack<PsiElement> stack = new Stack<>();
         PyParameter keywordContainer = getKeywordContainer(function);
         if (keywordContainer != null && statementList != null) {
             String keywordContainerName = keywordContainer.getName();
@@ -114,8 +120,8 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
                 stack.push(st);
                 while (!stack.isEmpty()) {
                     PsiElement e = stack.pop();
-                    if (e instanceof PySubscriptionExpression) {
-                        if (((PySubscriptionExpression) e).getOperand().getText().equals(keywordContainerName)) {
+                    if (e instanceof PySubscriptionExpression subscriptionExpr) {
+                        if (subscriptionExpr.getOperand().getText().equals(keywordContainerName)) {
                             subscriptions.add((PySubscriptionExpression) e);
                         }
                     }
@@ -130,6 +136,7 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         return subscriptions;
     }
 
+    @RequiredReadAction
     private static boolean isCallElement(PyExpression callee, String keywordContainerName) {
         PyExpression qualifier = ((PyQualifiedExpression) callee).getQualifier();
         return (qualifier != null && qualifier.getText().equals(keywordContainerName)
@@ -137,10 +144,11 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
             || "__getitem__".equals(((PyQualifiedExpression) callee).getReferencedName())));
     }
 
+    @RequiredReadAction
     private static List<PyCallExpression> fillCallExpressions(PyFunction function) {
-        List<PyCallExpression> callElements = new ArrayList<PyCallExpression>();
+        List<PyCallExpression> callElements = new ArrayList<>();
         PyStatementList statementList = function.getStatementList();
-        Stack<PsiElement> stack = new Stack<PsiElement>();
+        Stack<PsiElement> stack = new Stack<>();
         PyParameter keywordContainer = getKeywordContainer(function);
         if (keywordContainer != null && statementList != null) {
             String keywordContainerName = keywordContainer.getName();
@@ -149,9 +157,9 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
                 while (!stack.isEmpty()) {
                     PsiElement e = stack.pop();
                     if (!(e instanceof PySubscriptionExpression)) {
-                        if (e instanceof PyCallExpression && ((PyCallExpression) e).getCallee() instanceof PyQualifiedExpression
-                            && isCallElement(((PyCallExpression) e).getCallee(), keywordContainerName)) {
-                            callElements.add((PyCallExpression) e);
+                        if (e instanceof PyCallExpression call && call.getCallee() instanceof PyQualifiedExpression
+                            && isCallElement(call.getCallee(), keywordContainerName)) {
+                            callElements.add(call);
                         }
                         else {
                             for (PsiElement psiElement : e.getChildren()) {
@@ -165,6 +173,7 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         return callElements;
     }
 
+    @RequiredWriteAction
     private static void replaceSubscriptions(PyFunction function, Project project) {
         PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
         List<PySubscriptionExpression> subscriptions = fillSubscriptions(function);
@@ -172,11 +181,9 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         for (int i = 0; i != size; ++i) {
             PySubscriptionExpression subscriptionExpression = subscriptions.get(i);
             PyExpression indexExpression = subscriptionExpression.getIndexExpression();
-            if (indexExpression instanceof PyStringLiteralExpression) {
-                PyExpression p = elementGenerator.createExpressionFromText(
-                    LanguageLevel.forElement(function),
-                    ((PyStringLiteralExpression) indexExpression).getStringValue()
-                );
+            if (indexExpression instanceof PyStringLiteralExpression stringLiteral) {
+                PyExpression p =
+                    elementGenerator.createExpressionFromText(LanguageLevel.forElement(function), stringLiteral.getStringValue());
                 ASTNode comma = elementGenerator.createComma();
                 PyClass containingClass = function.getContainingClass();
                 if (p != null) {
@@ -194,6 +201,7 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         }
     }
 
+    @RequiredWriteAction
     private static void replaceCallElements(PyFunction function, Project project) {
         PyElementGenerator elementGenerator = PyElementGenerator.getInstance(project);
         List<PyCallExpression> callElements = fillCallExpressions(function);
@@ -201,26 +209,21 @@ public class ConvertVariadicParamIntention extends BaseIntentionAction {
         int size = callElements.size();
         for (int i = 0; i != size; ++i) {
             PyCallExpression callExpression = callElements.get(i);
-            PyExpression indexExpression = callExpression.getArguments()[0];
 
-            if (indexExpression instanceof PyStringLiteralExpression) {
+            if (callExpression.getArguments()[0] instanceof PyStringLiteralExpression stringLiteral) {
                 PyNamedParameter defaultValue = null;
                 if (callExpression.getArguments().length > 1) {
-                    defaultValue = elementGenerator.createParameter(
-                        ((PyStringLiteralExpression) indexExpression).getStringValue()
-                            + "=" + callExpression.getArguments()[1].getText());
+                    defaultValue =
+                        elementGenerator.createParameter(stringLiteral.getStringValue() + "=" + callExpression.getArguments()[1].getText());
                 }
                 if (defaultValue == null) {
                     PyExpression callee = callExpression.getCallee();
-                    if (callee instanceof PyQualifiedExpression && "get".equals(((PyQualifiedExpression) callee).getReferencedName())) {
-                        defaultValue =
-                            elementGenerator.createParameter(((PyStringLiteralExpression) indexExpression).getStringValue() + "=None");
+                    if (callee instanceof PyQualifiedExpression qExpr && "get".equals(qExpr.getReferencedName())) {
+                        defaultValue = elementGenerator.createParameter(stringLiteral.getStringValue() + "=None");
                     }
                 }
-                PyExpression p = elementGenerator.createExpressionFromText(
-                    LanguageLevel.forElement(function),
-                    ((PyStringLiteralExpression) indexExpression).getStringValue()
-                );
+                PyExpression p =
+                    elementGenerator.createExpressionFromText(LanguageLevel.forElement(function), stringLiteral.getStringValue());
                 ASTNode comma = elementGenerator.createComma();
 
                 PyParameter keywordContainer = getKeywordContainer(function);
