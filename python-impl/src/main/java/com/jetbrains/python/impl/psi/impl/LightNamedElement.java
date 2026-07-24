@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.psi.impl;
 
 import consulo.language.Language;
@@ -36,22 +35,27 @@ public class LightNamedElement extends LightElement implements PyElement, PsiNam
     myName = name;
   }
 
+  @Override
   public String getText() {
     return myName;
   }
 
+  @Override
   public void accept(PsiElementVisitor visitor) {
     visitor.visitElement(this);
   }
 
+  @Override
   public PsiElement copy() {
     return null;
   }
 
+  @Override
   public String getName() {
     return myName;
   }
 
+  @Override
   public PsiElement setName(String name) throws IncorrectOperationException
   {
     throw new UnsupportedOperationException("LightNamedElement#setName() is not supported");

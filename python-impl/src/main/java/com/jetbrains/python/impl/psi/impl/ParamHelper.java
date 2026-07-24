@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.psi.impl;
 
 import com.jetbrains.python.psi.*;
@@ -89,20 +88,25 @@ public class ParamHelper {
   }
 
   public static abstract class ParamVisitor implements ParamWalker {
+    @Override
     public void enterTupleParameter(PyTupleParameter param, boolean first, boolean last) { }
 
+    @Override
     public void leaveTupleParameter(PyTupleParameter param, boolean first, boolean last) { }
 
+    @Override
     public void visitNamedParameter(PyNamedParameter param, boolean first, boolean last) { }
 
+    @Override
     public void visitSingleStarParameter(PySingleStarParameter param, boolean first, boolean last) { }
   }
 
   public static List<PyNamedParameter> collectNamedParameters(PyParameterList plist) {
-    final List<PyNamedParameter> result = new ArrayList<PyNamedParameter>(10); // a random 'enough'
+    final List<PyNamedParameter> result = new ArrayList<>(10); // a random 'enough'
     walkDownParamArray(
       plist.getParameters(),
       new ParamVisitor() {
+        @Override
         public void visitNamedParameter(PyNamedParameter param, boolean first, boolean last) {
           result.add(param);
         }
@@ -110,5 +114,4 @@ public class ParamHelper {
     );
     return result;
   }
-
 }

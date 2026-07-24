@@ -27,6 +27,8 @@ import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.ast.ASTNode;
 import consulo.language.ast.IElementType;
 import consulo.language.psi.PsiElement;
@@ -55,21 +57,29 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
   }
 
   @Nullable
+  @Override
+  @RequiredReadAction
   public PyExpression getLeftExpression() {
     return PsiTreeUtil.getChildOfType(this, PyExpression.class);
   }
 
+  @Override
+  @RequiredReadAction
   public PyExpression getRightExpression() {
     return PsiTreeUtil.getNextSiblingOfType(getLeftExpression(), PyExpression.class);
   }
 
   @Nullable
+  @Override
+  @RequiredReadAction
   public PyElementType getOperator() {
     PsiElement psiOperator = getPsiOperator();
     return psiOperator != null ? (PyElementType)psiOperator.getNode().getElementType() : null;
   }
 
   @Nullable
+  @Override
+  @RequiredReadAction
   public PsiElement getPsiOperator() {
     ASTNode node = getNode();
     ASTNode child = node.findChildByType(PyElementTypes.BINARY_OPS);
@@ -79,6 +89,8 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
     return null;
   }
 
+  @Override
+  @RequiredReadAction
   public boolean isOperator(String chars) {
     ASTNode child = getNode().getFirstChildNode();
     StringBuilder buf = new StringBuilder();
@@ -93,6 +105,8 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
   }
 
   @Nullable
+  @Override
+  @RequiredReadAction
   public PyExpression getOppositeExpression(PyExpression expression) throws IllegalArgumentException {
     PyExpression right = getRightExpression();
     PyExpression left = getLeftExpression();
@@ -106,6 +120,7 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
   }
 
   @Override
+  @RequiredWriteAction
   public void deleteChildInternal(ASTNode child) {
     PyExpression left = getLeftExpression();
     PyExpression right = getRightExpression();
@@ -130,6 +145,8 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
     return new PyOperatorReference(this, context);
   }
 
+  @Override
+  @RequiredReadAction
   public PyType getType(TypeEvalContext context, TypeEvalContext.Key key) {
     if (isOperator("and") || isOperator("or")) {
       PyExpression left = getLeftExpression();
@@ -183,6 +200,7 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
   }
 
   @Override
+  @RequiredReadAction
   public PyExpression getQualifier() {
     return getLeftExpression();
   }
@@ -194,17 +212,20 @@ public class PyBinaryExpressionImpl extends PyElementImpl implements PyBinaryExp
   }
 
   @Override
+  @RequiredReadAction
   public boolean isQualified() {
     return getQualifier() != null;
   }
 
   @Override
+  @RequiredReadAction
   public String getReferencedName() {
     PyElementType t = getOperator();
     return t != null ? t.getSpecialMethodName() : null;
   }
 
   @Override
+  @RequiredReadAction
   public ASTNode getNameElement() {
     PsiElement op = getPsiOperator();
     return op != null ? op.getNode() : null;

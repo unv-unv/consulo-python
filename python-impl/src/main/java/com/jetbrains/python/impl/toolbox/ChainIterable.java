@@ -69,6 +69,7 @@ public class ChainIterable<T> extends ChainedListBase<Iterable<T>> implements It
     return (myPayload == null);
   }
 
+  @Override
   public Iterator<T> iterator() {
     class IterMixedIn extends ChainIterationMixin<T, Iterable<T>> {
       IterMixedIn(ChainedListBase<Iterable<T>> link) {

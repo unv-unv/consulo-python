@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.rest.run.docutils;
 
 import com.jetbrains.rest.RestFileType;
 import com.jetbrains.python.rest.run.RestRunConfiguration;
 import com.jetbrains.python.rest.run.RestRunConfigurationType;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.execution.RunnerAndConfigurationSettings;
 import consulo.execution.action.ConfigurationContext;
@@ -26,7 +26,6 @@ import consulo.execution.action.Location;
 import consulo.execution.action.RuntimeConfigurationProducer;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
-import consulo.language.util.ModuleUtilCore;
 import consulo.module.Module;
 import consulo.project.Project;
 import consulo.util.io.FileUtil;
@@ -37,7 +36,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 /**
- * User : catherine
+ * @author catherine
  */
 @ExtensionImpl
 public class DocutilsConfigurationProducer extends RuntimeConfigurationProducer implements Cloneable {
@@ -47,16 +46,19 @@ public class DocutilsConfigurationProducer extends RuntimeConfigurationProducer 
     super(RestRunConfigurationType.getInstance().DOCUTILS_FACTORY);
   }
 
+  @Override
   public PsiElement getSourceElement() {
     return mySourceFile;
   }
 
+  @Override
+  @RequiredReadAction
   protected RunnerAndConfigurationSettings createConfigurationByElement(Location location, ConfigurationContext context) {
     PsiFile script = location.getPsiElement().getContainingFile();
     if (script == null || script.getFileType() != RestFileType.INSTANCE) {
       return null;
     }
-    Module module = ModuleUtilCore.findModuleForPsiElement(script);
+    Module module = script.getModule();
     mySourceFile = script;
 
     Project project = mySourceFile.getProject();
@@ -114,6 +116,7 @@ public class DocutilsConfigurationProducer extends RuntimeConfigurationProducer 
     return null;
   }
 
+  @Override
   public int compareTo(RuntimeConfigurationProducer o) {
     return PREFERED;
   }

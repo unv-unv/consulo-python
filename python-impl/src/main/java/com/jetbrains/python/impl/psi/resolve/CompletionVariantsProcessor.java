@@ -20,13 +20,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.jspecify.annotations.Nullable;
 
 import consulo.language.editor.completion.lookup.LookupElement;
 import consulo.language.editor.completion.lookup.LookupElementBuilder;
 import consulo.project.Project;
-import consulo.util.lang.function.Condition;
 import consulo.util.lang.StringUtil;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.util.PsiTreeUtil;
@@ -62,7 +62,7 @@ public class CompletionVariantsProcessor extends VariantsProcessor
 		super(context);
 	}
 
-	public CompletionVariantsProcessor(PsiElement context, @Nullable Condition<PsiElement> nodeFilter, @Nullable Condition<String> nameFilter)
+	public CompletionVariantsProcessor(PsiElement context, @Nullable Predicate<PsiElement> nodeFilter, @Nullable Predicate<String> nameFilter)
 	{
 		super(context, nodeFilter, nameFilter);
 	}

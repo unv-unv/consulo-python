@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.jython.sdk.flavors;
 
 import com.jetbrains.python.impl.sdk.flavors.PythonSdkFlavor;
@@ -45,13 +44,13 @@ public class JythonSdkFlavor extends PythonSdkFlavor
 	private static final String JYTHONPATH = "JYTHONPATH";
 	private static final String PYTHON_PATH_PREFIX = "-Dpython.path=";
 
-
 	public static String getPythonPathCmdLineArgument(Collection<String> path)
 	{
 		return PYTHON_PATH_PREFIX + StringUtil.join(appendSystemEnvPaths(path, JYTHONPATH), File.pathSeparator);
 	}
 
-	public boolean isValidSdkPath(File file)
+	@Override
+    public boolean isValidSdkPath(File file)
 	{
 		return FileUtil.getNameWithoutExtension(file).toLowerCase().startsWith("jython");
 	}
@@ -101,7 +100,7 @@ public class JythonSdkFlavor extends PythonSdkFlavor
 	@Override
 	public Collection<String> collectDebugPythonPath()
 	{
-		List<String> list = new ArrayList<String>(2);
+		List<String> list = new ArrayList<>(2);
 		//that fixes Jython problem changing sys.argv on execfile, see PY-8164
 		list.add(PythonHelpersLocator.getHelperPath("pycharm"));
 		list.add(PythonHelpersLocator.getHelperPath("pydev"));

@@ -17,10 +17,11 @@ package com.jetbrains.python.psi.types;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
+import consulo.annotation.access.RequiredReadAction;
 import org.jspecify.annotations.Nullable;
 import consulo.language.psi.PsiElement;
-import consulo.application.util.function.Processor;
 import com.jetbrains.python.psi.AccessDirection;
 import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.PyWithAncestors;
@@ -59,8 +60,9 @@ public interface PyClassLikeType extends PyCallableType, PyWithAncestors
 	 * @param context   context to be used to resolve types
 	 * @see PyTypeUtil#getMembersOfType(PyClassLikeType, Class, TypeEvalContext)
 	 */
-	void visitMembers(Processor<PsiElement> processor, boolean inherited, TypeEvalContext context);
+	void visitMembers(Predicate<PsiElement> processor, boolean inherited, TypeEvalContext context);
 
+    @RequiredReadAction
 	Set<String> getMemberNames(boolean inherited, TypeEvalContext context);
 
 	boolean isValid();

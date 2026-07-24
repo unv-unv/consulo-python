@@ -16,11 +16,10 @@
 package com.jetbrains.python.impl.inspections.quickfix;
 
 import com.jetbrains.python.psi.*;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.language.ast.ASTNode;
 import consulo.language.editor.inspection.LocalQuickFix;
 import consulo.language.editor.inspection.ProblemDescriptor;
-import consulo.language.psi.PsiElement;
-import consulo.language.psi.PsiPolyVariantReference;
 import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
@@ -31,30 +30,26 @@ public class PyAddExceptionSuperClassQuickFix implements LocalQuickFix {
         return PyLocalize.qfixNameAddExceptionBase();
     }
 
+    @Override
+    @RequiredWriteAction
     public void applyFix(Project project, ProblemDescriptor descriptor) {
-        PsiElement element = descriptor.getPsiElement();
-        if (element instanceof PyCallExpression) {
-            PyExpression callee = ((PyCallExpression) element).getCallee();
-            if (callee instanceof PyReferenceExpression) {
-                PsiPolyVariantReference reference = ((PyReferenceExpression) callee).getReference();
-                PsiElement psiElement = reference.resolve();
-                if (psiElement instanceof PyClass) {
-                    PyElementGenerator generator = PyElementGenerator.getInstance(project);
-                    PyArgumentList list = ((PyClass) psiElement).getSuperClassExpressionList();
-                    if (list != null) {
-                        PyExpression exception = generator.createExpressionFromText(LanguageLevel.forElement(element), "Exception");
-                        list.addArgument(exception);
-                    }
-                    else {
-                        PyArgumentList expressionList =
-                            generator.createFromText(LanguageLevel.forElement(element), PyClass.class, "class A(Exception): pass")
-                                .getSuperClassExpressionList();
-                        assert expressionList != null;
-                        ASTNode nameNode = ((PyClass) psiElement).getNameNode();
-                        assert nameNode != null;
-                        psiElement.addAfter(expressionList, nameNode.getPsi());
-                    }
-                }
+        if (descriptor.getPsiElement() instanceof PyCallExpression call
+            && call.getCallee() instanceof PyReferenceExpression callee
+            && callee.getReference().resolve() instanceof PyClass pyClass) {
+            PyElementGenerator generator = PyElementGenerator.getInstance(project);
+            PyArgumentList list = pyClass.getSuperClassExpressionList();
+            if (list != null) {
+                PyExpression exception = generator.createExpressionFromText(LanguageLevel.forElement(call), "Exception");
+                list.addArgument(exception);
+            }
+            else {
+                PyArgumentList expressionList =
+                    generator.createFromText(LanguageLevel.forElement(call), PyClass.class, "class A(Exception): pass")
+                        .getSuperClassExpressionList();
+                assert expressionList != null;
+                ASTNode nameNode = pyClass.getNameNode();
+                assert nameNode != null;
+                pyClass.addAfter(expressionList, nameNode.getPsi());
             }
         }
     }

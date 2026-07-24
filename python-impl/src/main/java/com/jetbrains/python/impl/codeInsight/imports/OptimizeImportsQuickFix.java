@@ -28,6 +28,7 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiFile;
 import com.jetbrains.python.psi.PyFile;
 import consulo.language.util.IncorrectOperationException;
+import consulo.ui.annotation.RequiredUIAccess;
 
 /**
  * @author yole
@@ -49,6 +50,7 @@ public class OptimizeImportsQuickFix implements LocalQuickFix, IntentionAction, 
     }
 
     @Override
+    @RequiredUIAccess
     public void invoke(Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
         optimizeImports(project, file);
     }
@@ -58,6 +60,8 @@ public class OptimizeImportsQuickFix implements LocalQuickFix, IntentionAction, 
         return false;
     }
 
+    @Override
+    @RequiredUIAccess
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         PsiElement element = descriptor.getPsiElement();
         if (element == null) {  // stale PSI
@@ -67,6 +71,7 @@ public class OptimizeImportsQuickFix implements LocalQuickFix, IntentionAction, 
         optimizeImports(project, file);
     }
 
+    @RequiredUIAccess
     private void optimizeImports(final Project project, final PsiFile file) {
         ImportOptimizer optimizer = new PyImportOptimizer();
         final Runnable runnable = optimizer.processFile(file);

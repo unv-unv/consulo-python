@@ -41,24 +41,27 @@ public class PyAnnotationElementType extends PyStubElementType<PyAnnotationStub,
     super(debugName);
   }
 
+  @Override
   public PyAnnotation createPsi(PyAnnotationStub stub) {
     return new PyAnnotationImpl(stub);
   }
 
+  @Override
   public PyAnnotationStub createStub(PyAnnotation psi, StubElement parentStub) {
     return new PyAnnotationStubImpl(parentStub, PyElementTypes.ANNOTATION);
   }
 
+  @Override
   public PsiElement createElement(ASTNode node) {
     return new PyAnnotationImpl(node);
   }
 
-  public void serialize(PyAnnotationStub stub, StubOutputStream dataStream)
-      throws IOException {
+  @Override
+  public void serialize(PyAnnotationStub stub, StubOutputStream dataStream) throws IOException {
   }
 
-  public PyAnnotationStub deserialize(StubInputStream dataStream, StubElement parentStub)
-      throws IOException {
+  @Override
+  public PyAnnotationStub deserialize(StubInputStream dataStream, StubElement parentStub) throws IOException {
     return new PyAnnotationStubImpl(parentStub, PyElementTypes.ANNOTATION);
   }
 }

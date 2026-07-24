@@ -29,6 +29,7 @@ import consulo.language.psi.util.PsiTreeUtil;
 import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import consulo.python.impl.localize.PyLocalize;
+import consulo.ui.annotation.RequiredUIAccess;
 
 import java.util.List;
 
@@ -44,6 +45,8 @@ public class PyChangeSignatureQuickFix implements LocalQuickFix {
         return PyLocalize.qfixNameChangeSignature();
     }
 
+    @Override
+    @RequiredUIAccess
     public void applyFix(Project project, ProblemDescriptor descriptor) {
         final PyFunction function = PsiTreeUtil.getParentOfType(descriptor.getPsiElement(), PyFunction.class);
         if (function == null) {
@@ -78,7 +81,7 @@ public class PyChangeSignatureQuickFix implements LocalQuickFix {
         dialog.show();
     }
 
-    //@Override
+    @Override
     public boolean startInWriteAction() {
         return false;
     }

@@ -15,7 +15,6 @@
  */
 package com.jetbrains.python.impl.buildout.config;
 
-
 import consulo.language.ast.ASTNode;
 import consulo.language.version.LanguageVersion;
 import consulo.language.parser.PsiBuilder;
@@ -26,6 +25,7 @@ import consulo.language.ast.IElementType;
  * @author traff
  */
 public class BuildoutCfgParser implements PsiParser, BuildoutCfgElementTypes, BuildoutCfgTokenTypes {
+  @Override
   public ASTNode parse(IElementType root, PsiBuilder builder, LanguageVersion languageVersion) {
     PsiBuilder.Marker rootMarker = builder.mark();
     Parsing parsing = new Parsing(builder);
@@ -140,7 +140,6 @@ public class BuildoutCfgParser implements PsiParser, BuildoutCfgElementTypes, Bu
     private PsiBuilder.Marker mark() {
       return myBuilder.mark();
     }
-
 
     public void doneAdvance(PsiBuilder.Marker marker, IElementType element) {
       myBuilder.advanceLexer();

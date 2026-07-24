@@ -26,6 +26,7 @@ import com.jetbrains.python.impl.psi.stubs.PySuperClassIndex;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.psi.stubs.PyClassStub;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.index.io.StringRef;
 import consulo.language.ast.ASTNode;
 import consulo.language.psi.PsiElement;
@@ -52,20 +53,31 @@ public class PyClassElementType extends PyStubElementType<PyClassStub, PyClass>
 		super(debugName);
 	}
 
-	public PsiElement createElement(ASTNode node)
+	@Override
+    public PsiElement createElement(ASTNode node)
 	{
 		return new PyClassImpl(node);
 	}
 
-	public PyClass createPsi(PyClassStub stub)
+	@Override
+    public PyClass createPsi(PyClassStub stub)
 	{
 		return new PyClassImpl(stub);
 	}
 
-	public PyClassStub createStub(PyClass psi, StubElement parentStub)
+	@Override
+    @RequiredReadAction
+    public PyClassStub createStub(PyClass psi, StubElement parentStub)
 	{
-		return new PyClassStubImpl(psi.getName(), parentStub, getSuperClassQNames(psi), PyPsiUtils.toQualifiedName(psi.getMetaClassExpression()), psi.getOwnSlots(), PyPsiUtils.strValue(psi
-				.getDocStringExpression()), getStubElementType());
+        return new PyClassStubImpl(
+            psi.getName(),
+            parentStub,
+            getSuperClassQNames(psi),
+            PyPsiUtils.toQualifiedName(psi.getMetaClassExpression()),
+            psi.getOwnSlots(),
+            PyPsiUtils.strValue(psi.getDocStringExpression()),
+            getStubElementType()
+        );
 	}
 
 	public static Map<QualifiedName, QualifiedName> getSuperClassQNames(PyClass pyClass)
@@ -103,7 +115,8 @@ public class PyClassElementType extends PyStubElementType<PyClassStub, PyClass>
 		return PyPsiUtils.toQualifiedName(superClassExpression);
 	}
 
-	public void serialize(PyClassStub pyClassStub, StubOutputStream dataStream) throws IOException
+	@Override
+    public void serialize(PyClassStub pyClassStub, StubOutputStream dataStream) throws IOException
 	{
 		dataStream.writeName(pyClassStub.getName());
 
@@ -123,7 +136,8 @@ public class PyClassElementType extends PyStubElementType<PyClassStub, PyClass>
 		dataStream.writeUTFFast(docString != null ? docString : "");
 	}
 
-	public PyClassStub deserialize(StubInputStream dataStream, StubElement parentStub) throws IOException
+	@Override
+    public PyClassStub deserialize(StubInputStream dataStream, StubElement parentStub) throws IOException
 	{
 		String name = StringRef.toString(dataStream.readName());
 
@@ -144,7 +158,8 @@ public class PyClassElementType extends PyStubElementType<PyClassStub, PyClass>
 		return new PyClassStubImpl(name, parentStub, superClasses, metaClass, slots, docString, getStubElementType());
 	}
 
-	public void indexStub(PyClassStub stub, IndexSink sink)
+	@Override
+    public void indexStub(PyClassStub stub, IndexSink sink)
 	{
 		String name = stub.getName();
 		if(name != null)

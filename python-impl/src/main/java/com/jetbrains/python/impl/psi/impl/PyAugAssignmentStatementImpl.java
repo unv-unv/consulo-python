@@ -21,6 +21,7 @@ import com.jetbrains.python.psi.PyAugAssignmentStatement;
 import com.jetbrains.python.psi.PyElementVisitor;
 import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.ast.ASTNode;
 import consulo.language.psi.PsiElement;
 
@@ -42,7 +43,9 @@ public class PyAugAssignmentStatementImpl extends PyElementImpl implements PyAug
 		pyVisitor.visitPyAugAssignmentStatement(this);
 	}
 
-	public PyExpression getTarget()
+	@Override
+    @RequiredReadAction
+    public PyExpression getTarget()
 	{
 		PyExpression target = childToPsi(PythonDialectsTokenSetProvider.INSTANCE.getExpressionTokens(), 0);
 		if(target == null)
@@ -52,13 +55,16 @@ public class PyAugAssignmentStatementImpl extends PyElementImpl implements PyAug
 		return target;
 	}
 
-	@Nullable
+    @Nullable
+    @Override
+    @RequiredReadAction
 	public PyExpression getValue()
 	{
 		return childToPsi(PythonDialectsTokenSetProvider.INSTANCE.getExpressionTokens(), 1);
 	}
 
 	@Nullable
+    @Override
 	public PsiElement getOperation()
 	{
 		return PyPsiUtils.getChildByFilter(this, PyTokenTypes.AUG_ASSIGN_OPERATIONS, 0);

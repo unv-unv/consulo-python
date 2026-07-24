@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.psi.impl;
 
+import consulo.annotation.access.RequiredReadAction;
 import consulo.language.ast.ASTNode;
 import com.jetbrains.python.psi.PyBoolLiteralExpression;
 import com.jetbrains.python.psi.PyElementVisitor;
@@ -30,11 +30,13 @@ public class PyBoolLiteralExpressionImpl extends PyElementImpl implements PyBool
     super(astNode);
   }
 
+  @Override
   public PyType getType(TypeEvalContext context, TypeEvalContext.Key key) {
     return PyBuiltinCache.getInstance(this).getBoolType();
   }
 
   @Override
+  @RequiredReadAction
   public boolean getValue() {
     return "True".equals(getText());
   }

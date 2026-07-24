@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.codeInsight.intentions;
 
+import consulo.annotation.access.RequiredReadAction;
 import consulo.colorScheme.TextAttributes;
 import consulo.document.Document;
 import consulo.fileEditor.FileEditorLocation;
@@ -34,11 +34,10 @@ import java.awt.*;
 
 /**
  * Simplistic usage object for demonstration of name clashes, etc.
- * User: dcheryasov
- * Date: Oct 11, 2009 6:24:05 AM
+ * @author dcheryasov
+ * @since 2009-10-11
  */
 class NameUsage implements PsiElementUsage {
-
   private final PsiElement myElement;
   private final PsiElement myCulprit;
 
@@ -65,17 +64,23 @@ class NameUsage implements PsiElementUsage {
     myIsPrefix = prefix;
   }
 
+  @Override
   public FileEditorLocation getLocation() {
     return null;
   }
 
+  @Override
   public UsagePresentation getPresentation() {
     return new UsagePresentation() {
       @Nullable
+      @Override
+      @RequiredReadAction
       public Image getIcon() {
         return myElement.isValid() ? IconDescriptorUpdaters.getIcon(myElement, 0) : null;
       }
 
+      @Override
+      @RequiredReadAction
       public TextChunk[] getText() {
         if (myElement.isValid()) {
           TextChunk[] chunks = new TextChunk[3];
@@ -95,45 +100,61 @@ class NameUsage implements PsiElementUsage {
         else return new TextChunk[]{new TextChunk(SLANTED, "?")}; 
       }
 
+      @Override
+      @RequiredReadAction
       public String getPlainText() {
         return myElement.getText();
       }
 
+      @Override
+      @RequiredReadAction
       public String getTooltipText() {
         return myElement.getText();
       }
     };
   }
 
+  @Override
   public boolean isValid() {
     return true;
   }
 
+  @Override
   public boolean isReadOnly() {
     return false;
   }
 
+  @Override
   public void selectInEditor() { }
 
+  @Override
   public void highlightInEditor() { }
 
+  @Override
+  @RequiredReadAction
   public void navigate(boolean requestFocus) {
     Navigatable descr = EditSourceUtil.getDescriptor(myElement);
     if (descr != null) descr.navigate(requestFocus);
   }
 
+  @Override
+  @RequiredReadAction
   public boolean canNavigate() {
     return EditSourceUtil.canNavigate(myElement);
   }
 
+  @Override
+  @RequiredReadAction
   public boolean canNavigateToSource() {
     return false;
   }
 
+  @Override
   public PsiElement getElement() {
     return myCulprit;
   }
 
+  @Override
   public boolean isNonCodeUsage() {
     return false;
   }

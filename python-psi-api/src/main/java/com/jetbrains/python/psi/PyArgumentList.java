@@ -17,6 +17,7 @@ package com.jetbrains.python.psi;
 
 import java.util.Collection;
 
+import consulo.annotation.access.RequiredWriteAction;
 import org.jspecify.annotations.Nullable;
 import consulo.language.ast.ASTNode;
 import com.jetbrains.python.FunctionParameter;
@@ -28,7 +29,6 @@ import com.jetbrains.python.FunctionParameter;
  */
 public interface PyArgumentList extends PyElement
 {
-
 	/**
 	 * @return all argument list param expressions (keyword argument or nameless)
 	 */
@@ -48,10 +48,13 @@ public interface PyArgumentList extends PyElement
 	 *
 	 * @param arg argument to add
 	 */
+    @RequiredWriteAction
 	void addArgument(PyExpression arg);
 
+    @RequiredWriteAction
 	void addArgumentFirst(PyExpression arg);
 
+    @RequiredWriteAction
 	void addArgumentAfter(PyExpression argument, PyExpression afterThis);
 
 	/**

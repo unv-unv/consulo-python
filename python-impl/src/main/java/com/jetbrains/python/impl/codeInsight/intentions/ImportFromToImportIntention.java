@@ -21,6 +21,8 @@ import com.jetbrains.python.impl.psi.types.PyModuleType;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyPsiUtils;
 import com.jetbrains.python.psi.types.TypeEvalContext;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.codeEditor.Editor;
 import consulo.document.Document;
 import consulo.language.ast.ASTNode;
@@ -146,6 +148,8 @@ public class ImportFromToImportIntention extends PyBaseIntentionAction {
         return dots;
     }
 
+    @Override
+    @RequiredReadAction
     public boolean isAvailable(Project project, Editor editor, PsiFile file) {
         if (!(file instanceof PyFile)) {
             return false;
@@ -187,20 +191,22 @@ public class ImportFromToImportIntention extends PyBaseIntentionAction {
     /**
      * Adds myModuleName as a qualifier to target.
      *
-     * @param target_node what to qualify
+     * @param targetNode what to qualify
      * @param project
      * @param qualifier
      */
-    private static void qualifyTarget(ASTNode target_node, Project project, String qualifier) {
+    @RequiredWriteAction
+    private static void qualifyTarget(ASTNode targetNode, Project project, String qualifier) {
         PyElementGenerator generator = PyElementGenerator.getInstance(project);
-        target_node.addChild(generator.createDot(), target_node.getFirstChildNode());
-        target_node.addChild(sure(generator.createFromText(LanguageLevel.getDefault(), PyReferenceExpression.class, qualifier, new int[]{
+        targetNode.addChild(generator.createDot(), targetNode.getFirstChildNode());
+        targetNode.addChild(sure(generator.createFromText(LanguageLevel.getDefault(), PyReferenceExpression.class, qualifier, new int[]{
             0,
             0
-        }).getNode()), target_node.getFirstChildNode());
+        }).getNode()), targetNode.getFirstChildNode());
     }
 
     @Override
+    @RequiredWriteAction
     public void doInvoke(Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
         InfoHolder info = InfoHolder.collect(getElementFromEditor(editor, file));
         try {
@@ -219,45 +225,43 @@ public class ImportFromToImportIntention extends PyBaseIntentionAction {
                 qualifier = info.myModuleName;
             }
             // find all unqualified references that lead to one of our import elements
-            final PyImportElement[] ielts = info.myFromImportStatement.getImportElements();
-            final PyStarImportElement star_ielt = info.myFromImportStatement.getStarImportElement();
-            final Map<PsiReference, PyImportElement> references = new HashMap<>();
-            final List<PsiReference> star_references = new ArrayList<>();
-            PsiTreeUtil.processElements(file, new PsiElementProcessor() {
-                public boolean execute(PsiElement element) {
-                    PyPsiUtils.assertValid(element);
-                    if (element instanceof PyReferenceExpression && PsiTreeUtil.getParentOfType(element, PyImportElement.class) == null) {
-                        PyReferenceExpression ref = (PyReferenceExpression) element;
-                        if (!ref.isQualified()) {
-                            ResolveResult[] resolved = ref.getReference().multiResolve(false);
-                            for (ResolveResult rr : resolved) {
-                                if (rr.isValidResult()) {
-                                    if (rr.getElement() == star_ielt) {
-                                        star_references.add(ref.getReference());
-                                    }
-                                    for (PyImportElement ielt : ielts) {
-                                        if (rr.getElement() == ielt) {
-                                            references.put(ref.getReference(), ielt);
-                                        }
+            PyImportElement[] iElts = info.myFromImportStatement.getImportElements();
+            PyStarImportElement starIElt = info.myFromImportStatement.getStarImportElement();
+            Map<PsiReference, PyImportElement> references = new HashMap<>();
+            List<PsiReference> star_references = new ArrayList<>();
+            PsiTreeUtil.processElements(file, element -> {
+                PyPsiUtils.assertValid(element);
+                if (element instanceof PyReferenceExpression && PsiTreeUtil.getParentOfType(element, PyImportElement.class) == null) {
+                    PyReferenceExpression ref = (PyReferenceExpression) element;
+                    if (!ref.isQualified()) {
+                        ResolveResult[] resolved = ref.getReference().multiResolve(false);
+                        for (ResolveResult rr : resolved) {
+                            if (rr.isValidResult()) {
+                                if (rr.getElement() == starIElt) {
+                                    star_references.add(ref.getReference());
+                                }
+                                for (PyImportElement iElt : iElts) {
+                                    if (rr.getElement() == iElt) {
+                                        references.put(ref.getReference(), iElt);
                                     }
                                 }
                             }
                         }
                     }
-                    return true;
                 }
+                return true;
             });
 
             // check that at every replacement site our topmost qualifier name is visible
-            PyQualifiedExpression top_qualifier;
+            PyQualifiedExpression topQualifier;
             PyExpression feeler = info.myModuleReference;
             do {
                 sure(feeler instanceof PyQualifiedExpression); // if for some crazy reason module name refers to numbers, etc, no point to continue.
-                top_qualifier = (PyQualifiedExpression) feeler;
-                feeler = top_qualifier.getQualifier();
+                topQualifier = (PyQualifiedExpression) feeler;
+                feeler = topQualifier.getQualifier();
             }
             while (feeler != null);
-            String top_name = top_qualifier.getName();
+            String top_name = topQualifier.getName();
             Collection<PsiReference> possible_targets = references.keySet();
             if (star_references.size() > 0) {
                 possible_targets = new ArrayList<>(references.keySet().size() + star_references.size());
@@ -277,31 +281,31 @@ public class ImportFromToImportIntention extends PyBaseIntentionAction {
             // add qualifiers
             PyElementGenerator generator = PyElementGenerator.getInstance(project);
             for (Map.Entry<PsiReference, PyImportElement> entry : references.entrySet()) {
-                PsiElement referring_elt = entry.getKey().getElement();
-                assert referring_elt.isValid(); // else we won't add it
-                ASTNode target_node = referring_elt.getNode();
-                assert target_node != null; // else it won't be valid
-                PyImportElement ielt = entry.getValue();
-                if (ielt.getAsNameElement() != null) {
+                PsiElement referringElt = entry.getKey().getElement();
+                assert referringElt.isValid(); // else we won't add it
+                ASTNode targetNode = referringElt.getNode();
+                assert targetNode != null; // else it won't be valid
+                PyImportElement iElt = entry.getValue();
+                if (iElt.getAsNameElement() != null) {
                     // we have an alias, replace it with real name
-                    PyReferenceExpression refex = ielt.getImportReferenceExpression();
-                    assert refex != null; // else we won't resolve to this ielt
-                    String real_name = refex.getReferencedName();
-                    ASTNode new_qualifier = generator.createExpressionFromText(real_name).getNode();
-                    assert new_qualifier != null;
+                    PyReferenceExpression refEx = iElt.getImportReferenceExpression();
+                    assert refEx != null; // else we won't resolve to this iElt
+                    String realName = refEx.getReferencedName();
+                    ASTNode newQualifier = generator.createExpressionFromText(realName).getNode();
+                    assert newQualifier != null;
                     //ASTNode first_under_target = target_node.getFirstChildNode();
                     //if (first_under_target != null) new_qualifier.addChildren(first_under_target, null, null); // save the children if any
-                    target_node.getTreeParent().replaceChild(target_node, new_qualifier);
-                    target_node = new_qualifier;
+                    targetNode.getTreeParent().replaceChild(targetNode, newQualifier);
+                    targetNode = newQualifier;
                 }
-                qualifyTarget(target_node, project, qualifier);
+                qualifyTarget(targetNode, project, qualifier);
             }
             for (PsiReference reference : star_references) {
-                PsiElement referring_elt = reference.getElement();
-                assert referring_elt.isValid(); // else we won't add it
-                ASTNode target_node = referring_elt.getNode();
-                assert target_node != null; // else it won't be valid
-                qualifyTarget(target_node, project, qualifier);
+                PsiElement referringElt = reference.getElement();
+                assert referringElt.isValid(); // else we won't add it
+                ASTNode targetNode = referringElt.getNode();
+                assert targetNode != null; // else it won't be valid
+                qualifyTarget(targetNode, project, qualifier);
             }
             // transform the import statement
             PyStatement new_import;
@@ -322,8 +326,7 @@ public class ImportFromToImportIntention extends PyBaseIntentionAction {
             //myFromImportStatement.replace(new_import);
         }
         catch (IncorrectOperationException ignored) {
-            PyUtil.showBalloon(project, PyLocalize.qfixActionFailed().get(), NotificationType.WARNING);
+            PyUtil.showBalloon(project, PyLocalize.qfixActionFailed(), NotificationType.WARNING);
         }
     }
 }
-

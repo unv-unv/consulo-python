@@ -17,6 +17,7 @@ package com.jetbrains.python.impl.codeInsight.editorActions.smartEnter.fixers;
 
 import static com.jetbrains.python.impl.psi.PyUtil.sure;
 
+import consulo.annotation.access.RequiredWriteAction;
 import consulo.codeEditor.Editor;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.util.PsiTreeUtil;
@@ -28,37 +29,31 @@ import com.jetbrains.python.psi.impl.PyPsiUtils;
 import consulo.language.util.IncorrectOperationException;
 
 /**
- * Created by IntelliJ IDEA.
- * Author: Alexey.Ivanov
- * Date:   16.04.2010
- * Time:   18:41:08
+ * @author Alexey.Ivanov
+ * @since 2010-04-16
  */
-public class PyClassFixer extends PyFixer<PyClass>
-{
-	public PyClassFixer()
-	{
-		super(PyClass.class);
-	}
+public class PyClassFixer extends PyFixer<PyClass> {
+    public PyClassFixer() {
+        super(PyClass.class);
+    }
 
-	public void doApply(Editor editor, PySmartEnterProcessor processor, PyClass pyClass) throws IncorrectOperationException
-	{
-		PsiElement colon = PyPsiUtils.getFirstChildOfType(pyClass, PyTokenTypes.COLON);
-		if(colon == null)
-		{
-			PyArgumentList argList = PsiTreeUtil.getChildOfType(pyClass, PyArgumentList.class);
-			int colonOffset = sure(argList).getTextRange().getEndOffset();
-			String textToInsert = ":";
-			if(pyClass.getNameNode() == null)
-			{
-				int newCaretOffset = argList.getTextOffset();
-				if(argList.getTextLength() == 0)
-				{
-					newCaretOffset += 1;
-					textToInsert = " :";
-				}
-				processor.registerUnresolvedError(newCaretOffset);
-			}
-			editor.getDocument().insertString(colonOffset, textToInsert);
-		}
-	}
+    @Override
+    @RequiredWriteAction
+    public void doApply(Editor editor, PySmartEnterProcessor processor, PyClass pyClass) throws IncorrectOperationException {
+        PsiElement colon = PyPsiUtils.getFirstChildOfType(pyClass, PyTokenTypes.COLON);
+        if (colon == null) {
+            PyArgumentList argList = PsiTreeUtil.getChildOfType(pyClass, PyArgumentList.class);
+            int colonOffset = sure(argList).getTextRange().getEndOffset();
+            String textToInsert = ":";
+            if (pyClass.getNameNode() == null) {
+                int newCaretOffset = argList.getTextOffset();
+                if (argList.getTextLength() == 0) {
+                    newCaretOffset += 1;
+                    textToInsert = " :";
+                }
+                processor.registerUnresolvedError(newCaretOffset);
+            }
+            editor.getDocument().insertString(colonOffset, textToInsert);
+        }
+    }
 }

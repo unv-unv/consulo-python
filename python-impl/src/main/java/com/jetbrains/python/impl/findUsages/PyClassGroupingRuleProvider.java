@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.jetbrains.python.impl.findUsages;
 
-
+import consulo.annotation.access.RequiredReadAction;
 import consulo.project.Project;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.util.PsiTreeUtil;
@@ -33,17 +32,20 @@ import com.jetbrains.python.psi.PyClass;
  */
 public class PyClassGroupingRuleProvider implements FileStructureGroupRuleProvider
 {
+  @Override
   public UsageGroupingRule getUsageGroupingRule(Project project) {
     return new PyClassGroupingRule();
   }
 
   private static class PyClassGroupingRule implements UsageGroupingRule {
+    @Override
+    @RequiredReadAction
     public UsageGroup groupUsage(Usage usage) {
-      if (!(usage instanceof PsiElementUsage)) return null;
-      PsiElement psiElement = ((PsiElementUsage)usage).getElement();
+      if (!(usage instanceof PsiElementUsage elementUsage)) return null;
+      PsiElement psiElement = elementUsage.getElement();
       PyClass pyClass = PsiTreeUtil.getParentOfType(psiElement, PyClass.class);
       if (pyClass != null) {
-        return new PsiNamedElementUsageGroupBase<PyClass>(pyClass);
+        return new PsiNamedElementUsageGroupBase<>(pyClass);
       }
       return null;
     }

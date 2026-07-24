@@ -234,9 +234,11 @@ public class PyElementGeneratorImpl extends PyElementGenerator {
   // TODO: Adds comma to empty list: adding "foo" to () will create (foo,). That is why "insertItemIntoListRemoveRedundantCommas" was created.
   // We probably need to fix this method and delete insertItemIntoListRemoveRedundantCommas
   @Override
-	public PsiElement insertItemIntoList(PyElement list,
-																			 @Nullable PyExpression afterThis,
-																			 PyExpression toInsert) throws IncorrectOperationException {
+  public PsiElement insertItemIntoList(
+    PyElement list,
+    @Nullable PyExpression afterThis,
+    PyExpression toInsert
+  ) throws IncorrectOperationException {
     ASTNode add = toInsert.getNode().copyElement();
     if (afterThis == null) {
       ASTNode exprNode = list.getNode();

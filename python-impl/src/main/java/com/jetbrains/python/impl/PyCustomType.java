@@ -15,54 +15,44 @@
  */
 package com.jetbrains.python.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.jspecify.annotations.Nullable;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
-import consulo.language.editor.completion.lookup.LookupElement;
-import consulo.util.lang.StringUtil;
-import consulo.language.psi.PsiElement;
-import consulo.language.util.ProcessingContext;
-import consulo.application.util.function.Processor;
+import com.jetbrains.python.impl.psi.PyUtil;
 import com.jetbrains.python.psi.AccessDirection;
 import com.jetbrains.python.psi.PyCallSiteExpression;
 import com.jetbrains.python.psi.PyElement;
 import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.impl.psi.PyUtil;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.resolve.RatedResolveResult;
-import com.jetbrains.python.psi.types.PyCallableParameter;
-import com.jetbrains.python.psi.types.PyClassLikeType;
-import com.jetbrains.python.psi.types.PyClassType;
-import com.jetbrains.python.psi.types.PyType;
-import com.jetbrains.python.psi.types.TypeEvalContext;
+import com.jetbrains.python.psi.types.*;
+import consulo.annotation.access.RequiredReadAction;
+import consulo.language.editor.completion.lookup.LookupElement;
+import consulo.language.psi.PsiElement;
+import consulo.language.util.ProcessingContext;
+import consulo.python.impl.localize.PyLocalize;
+import consulo.util.collection.ContainerUtil;
+import consulo.util.lang.StringUtil;
+import org.jspecify.annotations.Nullable;
+
+import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Custom (aka dynamic) type that delegates calls to some classes you pass to it.
  * We say this this class <strong>mimics</strong> such classes.
  * To be used for cases like "type()".
- * It optionally filters methods using {@link Processor}
+ * It optionally filters methods using {@link Predicate}
  *
  * @author Ilya.Kazakevich
  */
 public class PyCustomType implements PyClassLikeType
 {
-
 	private final List<PyClassLikeType> myTypesToMimic = new ArrayList<>();
 
 	@Nullable
-	private final Processor<PyElement> myFilter;
+	private final Predicate<PyElement> myFilter;
 
 	private final boolean myInstanceType;
-
 
 	/**
 	 * @param filter       filter to filter methods from classes (may be null to do no filtering)
@@ -71,7 +61,7 @@ public class PyCustomType implements PyClassLikeType
 	 *                     (like ctor)
 	 * @param typesToMimic types to "mimic": delegate calls to  (must be one at least!)
 	 */
-	public PyCustomType(@Nullable Processor<PyElement> filter, boolean instanceType, PyClassLikeType... typesToMimic)
+	public PyCustomType(@Nullable Predicate<PyElement> filter, boolean instanceType, PyClassLikeType... typesToMimic)
 	{
 		Preconditions.checkArgument(typesToMimic.length > 0, "Provide at least one class");
 		myFilter = filter;
@@ -130,7 +120,7 @@ public class PyCustomType implements PyClassLikeType
 
 			if(results != null)
 			{
-				globalResult.addAll(Collections2.filter(results, new ResolveFilter()));
+				globalResult.addAll(ContainerUtil.filter(results, new ResolveFilter()));
 			}
 		}
 		return globalResult;
@@ -225,14 +215,14 @@ public class PyCustomType implements PyClassLikeType
 
 		for(PyClassLikeType parentType : myTypesToMimic)
 		{
-			lookupElements.addAll(Collections2.filter(Arrays.asList(parentType.getCompletionVariants(completionPrefix, location, context)), new CompletionFilter()));
+			lookupElements.addAll(ContainerUtil.filter(Arrays.asList(parentType.getCompletionVariants(completionPrefix, location, context)), new CompletionFilter()));
 		}
 		return lookupElements.toArray(new Object[lookupElements.size()]);
 	}
 
-
 	@Nullable
 	@Override
+    @RequiredReadAction
 	public final String getName()
 	{
 		Collection<String> classNames = new ArrayList<>(myTypesToMimic.size());
@@ -249,8 +239,7 @@ public class PyCustomType implements PyClassLikeType
 			}
 		}
 
-
-		return PyBundle.message("custom.type.mimic.name", StringUtil.join(classNames, ","));
+		return PyLocalize.customTypeMimicName(StringUtil.join(classNames, ",")).get();
 	}
 
 	@Override
@@ -275,7 +264,7 @@ public class PyCustomType implements PyClassLikeType
 	private class ResolveFilter implements Predicate<RatedResolveResult>
 	{
 		@Override
-		public final boolean apply(@Nullable RatedResolveResult input)
+		public final boolean test(@Nullable RatedResolveResult input)
 		{
 			if(input == null)
 			{
@@ -290,24 +279,24 @@ public class PyCustomType implements PyClassLikeType
 			{
 				return false;
 			}
-			return myFilter.process(pyElement);
+			return myFilter.test(pyElement);
 		}
 	}
 
 	@Override
-	public final void visitMembers(Processor<PsiElement> processor, boolean inherited, TypeEvalContext context)
+	public final void visitMembers(Predicate<PsiElement> processor, boolean inherited, TypeEvalContext context)
 	{
 		for(PyClassLikeType type : myTypesToMimic)
 		{
 			// Only visit methods that are allowed by filter (if any)
 			type.visitMembers(t -> {
-				if(!(t instanceof PyElement))
+				if(!(t instanceof PyElement element))
 				{
 					return true;
 				}
-				if(myFilter == null || myFilter.process((PyElement) t))
+				if(myFilter == null || myFilter.test(element))
 				{
-					return processor.process(t);
+					return processor.test(t);
 				}
 				return true;
 			}, inherited, context);
@@ -315,6 +304,7 @@ public class PyCustomType implements PyClassLikeType
 	}
 
 	@Override
+    @RequiredReadAction
 	public Set<String> getMemberNames(boolean inherited, TypeEvalContext context)
 	{
 		Set<String> result = new LinkedHashSet<>();
@@ -333,7 +323,7 @@ public class PyCustomType implements PyClassLikeType
 	private class CompletionFilter implements Predicate<Object>
 	{
 		@Override
-		public final boolean apply(@Nullable Object input)
+		public final boolean test(@Nullable Object input)
 		{
 			if(input == null)
 			{
@@ -352,7 +342,7 @@ public class PyCustomType implements PyClassLikeType
 			{
 				return false;
 			}
-			return myFilter.process(pyElement);
+			return myFilter.test(pyElement);
 		}
 	}
 }

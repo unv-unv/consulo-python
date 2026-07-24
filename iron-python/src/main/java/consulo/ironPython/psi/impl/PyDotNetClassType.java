@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package consulo.ironPython.psi.impl;
 
+import com.jetbrains.python.impl.psi.impl.ResolveResultList;
 import com.jetbrains.python.psi.AccessDirection;
 import com.jetbrains.python.psi.PyCallSiteExpression;
 import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.impl.psi.impl.ResolveResultList;
 import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.resolve.RatedResolveResult;
 import com.jetbrains.python.psi.types.PyCallableParameter;
@@ -27,7 +26,6 @@ import com.jetbrains.python.psi.types.PyClassLikeType;
 import com.jetbrains.python.psi.types.PyType;
 import com.jetbrains.python.psi.types.TypeEvalContext;
 import consulo.annotation.access.RequiredReadAction;
-import consulo.application.util.function.Processor;
 import consulo.dotnet.psi.DotNetNamedElement;
 import consulo.dotnet.psi.DotNetTypeDeclaration;
 import consulo.dotnet.psi.resolve.DotNetTypeRef;
@@ -37,9 +35,10 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiNamedElement;
 import consulo.language.util.ProcessingContext;
 import consulo.util.collection.ArrayUtil;
-
 import org.jspecify.annotations.Nullable;
+
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author yole
@@ -57,6 +56,7 @@ public class PyDotNetClassType implements PyClassLikeType
 
 	@Override
 	@Nullable
+    @RequiredReadAction
 	public List<? extends RatedResolveResult> resolveMember(String name, PyExpression location, AccessDirection direction,
                                                             PyResolveContext resolveContext)
 	{
@@ -65,6 +65,7 @@ public class PyDotNetClassType implements PyClassLikeType
 
 	@Nullable
 	@Override
+    @RequiredReadAction
 	public List<? extends RatedResolveResult> resolveMember(String name, @Nullable PyExpression location,
 			AccessDirection direction, PyResolveContext resolveContext, boolean inherited)
 	{
@@ -82,15 +83,17 @@ public class PyDotNetClassType implements PyClassLikeType
 	}
 
 	@Override
-	public void visitMembers(Processor<PsiElement> processor, boolean inherited, TypeEvalContext context)
+    @RequiredReadAction
+	public void visitMembers(Predicate<PsiElement> processor, boolean inherited, TypeEvalContext context)
 	{
 		for(DotNetNamedElement dotNetNamedElement : myClass.getMembers())
 		{
-			processor.process(dotNetNamedElement);
+			processor.test(dotNetNamedElement);
 		}
 	}
 
 	@Override
+    @RequiredReadAction
 	public Set<String> getMemberNames(boolean inherited, TypeEvalContext context)
 	{
 		Set<String> names = new HashSet<>();
@@ -102,9 +105,10 @@ public class PyDotNetClassType implements PyClassLikeType
 	}
 
 	@Override
+    @RequiredReadAction
 	public Object[] getCompletionVariants(String completionPrefix, PsiElement location, ProcessingContext context)
 	{
-		List<Object> variants = new ArrayList<Object>();
+		List<Object> variants = new ArrayList<>();
 		for(PsiElement child : myClass.getMembers())
 		{
 			if(child instanceof PsiNamedElement)
@@ -116,6 +120,7 @@ public class PyDotNetClassType implements PyClassLikeType
 	}
 
 	@Override
+    @RequiredReadAction
 	public String getName()
 	{
 		if(myClass != null)
@@ -184,6 +189,7 @@ public class PyDotNetClassType implements PyClassLikeType
 
 	@Nullable
 	@Override
+    @RequiredReadAction
 	public String getClassQName()
 	{
 		return myClass.getPresentableQName();
@@ -193,7 +199,7 @@ public class PyDotNetClassType implements PyClassLikeType
 	@RequiredReadAction
 	public List<PyClassLikeType> getSuperClassTypes(TypeEvalContext context)
 	{
-		List<PyClassLikeType> result = new ArrayList<PyClassLikeType>();
+		List<PyClassLikeType> result = new ArrayList<>();
 		for(DotNetTypeRef typeRef : myClass.getExtendTypeRefs())
 		{
 			PsiElement resolve = typeRef.resolve().getElement();
@@ -206,6 +212,7 @@ public class PyDotNetClassType implements PyClassLikeType
 	}
 
 	@Override
+    @RequiredReadAction
 	public boolean isValid()
 	{
 		return myClass.isValid();

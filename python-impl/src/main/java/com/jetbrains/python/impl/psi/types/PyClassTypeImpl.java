@@ -32,7 +32,7 @@ import com.jetbrains.python.psi.resolve.PyResolveContext;
 import com.jetbrains.python.psi.resolve.RatedResolveResult;
 import com.jetbrains.python.psi.types.*;
 import com.jetbrains.python.toolbox.Maybe;
-import consulo.application.util.function.Processor;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.component.extension.Extensions;
 import consulo.language.editor.completion.CompletionUtilCore;
 import consulo.language.editor.completion.lookup.LookupElement;
@@ -47,11 +47,11 @@ import consulo.util.collection.ContainerUtil;
 import consulo.util.dataholder.Key;
 import consulo.util.dataholder.UserDataHolderBase;
 import consulo.util.lang.Pair;
-import consulo.util.lang.function.Condition;
 import consulo.util.lang.ref.Ref;
-
 import org.jspecify.annotations.Nullable;
+
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author yole
@@ -62,7 +62,7 @@ public class PyClassTypeImpl extends UserDataHolderBase implements PyClassType
 	protected final PyClass myClass;
 	protected final boolean myIsDefinition;
 
-	private static ThreadLocal<Set<Pair<PyClass, String>>> ourResolveMemberStack = new ThreadLocal<Set<Pair<PyClass, String>>>()
+	private static ThreadLocal<Set<Pair<PyClass, String>>> ourResolveMemberStack = new ThreadLocal<>()
 	{
 		@Override
 		protected Set<Pair<PyClass, String>> initialValue()
@@ -655,14 +655,14 @@ public class PyClassTypeImpl extends UserDataHolderBase implements PyClassType
 	}
 
 	@Override
-	public void visitMembers(Processor<PsiElement> processor, boolean inherited, TypeEvalContext context)
+	public void visitMembers(Predicate<PsiElement> processor, boolean inherited, TypeEvalContext context)
 	{
 		myClass.visitMethods(new MyProcessorWrapper<>(processor), false, context);
 		myClass.visitClassAttributes(new MyProcessorWrapper<>(processor), false, context);
 
 		for(PyTargetExpression expression : myClass.getInstanceAttributes())
 		{
-			processor.process(expression);
+			processor.test(expression);
 		}
 
 		if(!inherited)
@@ -681,6 +681,7 @@ public class PyClassTypeImpl extends UserDataHolderBase implements PyClassType
 	}
 
 	@Override
+    @RequiredReadAction
 	public Set<String> getMemberNames(boolean inherited, TypeEvalContext context)
 	{
 		Set<String> result = new LinkedHashSet<>();
@@ -913,19 +914,19 @@ public class PyClassTypeImpl extends UserDataHolderBase implements PyClassType
 		return new PyClassTypeImpl(pyClass, isDefinition);
 	}
 
-	private static final class MyProcessorWrapper<T extends PsiElement> implements Processor<T>
+	private static final class MyProcessorWrapper<T extends PsiElement> implements Predicate<T>
 	{
-		private final Processor<PsiElement> myProcessor;
+		private final Predicate<PsiElement> myProcessor;
 
-		private MyProcessorWrapper(Processor<PsiElement> processor)
+		private MyProcessorWrapper(Predicate<PsiElement> processor)
 		{
 			myProcessor = processor;
 		}
 
 		@Override
-		public boolean process(T t)
+		public boolean test(T t)
 		{
-			myProcessor.process(t);
+			myProcessor.test(t);
 			return true;
 		}
 	}
@@ -933,7 +934,7 @@ public class PyClassTypeImpl extends UserDataHolderBase implements PyClassType
 	/**
 	 * Accepts only targets that are not the given object.
 	 */
-	public static class FilterNotInstance implements Condition<PsiElement>
+	public static class FilterNotInstance implements Predicate<PsiElement>
 	{
 		Object instance;
 
@@ -942,7 +943,7 @@ public class PyClassTypeImpl extends UserDataHolderBase implements PyClassType
 			this.instance = instance;
 		}
 
-		public boolean value(PsiElement target)
+		public boolean test(PsiElement target)
 		{
 			return (instance != target);
 		}
